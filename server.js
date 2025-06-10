@@ -1,5 +1,6 @@
 // server.js (ENTRY POINT with Socket.IO integration)
 const http = require("http");
+const cors = require('cors');
 const socketIo = require("socket.io");
 const connectDB = require("./config/db");
 const app = require("./app");
