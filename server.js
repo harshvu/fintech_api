@@ -32,6 +32,6 @@ app.set("io", io);
 
 // Start server
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '147.93.27.17', () => {
   console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
 });
