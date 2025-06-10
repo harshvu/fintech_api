@@ -11,7 +11,7 @@ const sendToAIModel = async ({ ticker, user_id }) => {
     }
   };
 
-  const response = await axios.post("http://192.168.1.30:8001/train", payload);
+  const response = await axios.post("http://147.93.27.17:8001/train", payload);
   return response.data;
 };
 
