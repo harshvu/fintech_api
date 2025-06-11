@@ -1,4 +1,5 @@
 // server.js (ENTRY POINT with Socket.IO integration)
+require('dotenv').config();
 const http = require("http");
 const cors = require('cors');
 const socketIo = require("socket.io");

@@ -9,7 +9,7 @@ const options = {
       version: '1.0.0',
       description: 'Docs'
     },
-    servers: [{ url: 'http://localhost:5000' }],
+    servers: [{ url: 'http://147.93.27.17:5000' }],
     components: {
       securitySchemes: {
         bearerAuth: {
