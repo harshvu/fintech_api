@@ -28,5 +28,23 @@ const predictStocks = async (req, res) => {
     return res.status(500).json({ error: "Prediction failed", details: error.message });
   }
 };
+const getLatestPrediction = async (req, res) => {
+  try {
+    const latest = await PredictedStock.findOne().sort({ timestamp: -1 }).limit(1);
+    
+    if (!latest) {
+      return res.status(404).json({ message: "No prediction data found" });
+    }
 
-module.exports = { predictStocks };
+    return res.json({
+      message: "✅ Latest AI prediction fetched",
+      result: latest
+    });
+
+  } catch (error) {
+    console.error("Fetch error:", error.message);
+    return res.status(500).json({ error: "Failed to fetch latest prediction", details: error.message });
+  }
+};
+
+module.exports = { predictStocks, getLatestPrediction  };

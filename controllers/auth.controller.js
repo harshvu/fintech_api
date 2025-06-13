@@ -5,28 +5,49 @@ const Token = require('../models/token.model');
 const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
 
 exports.signup = async (req, res) => {
-  const { email, password } = req.body;
+  const { name, phone, email, password } = req.body;
   const userExists = await User.findOne({ email });
   if (userExists) return res.status(400).json({ error: 'User exists' });
 
   const hashed = await bcrypt.hash(password, 10);
-  const user = await User.create({ email, password: hashed });
+  const user = await User.create({
+    name,
+    phone,
+    email,
+    password: hashed,
+  });
 
   res.json({ message: 'User registered' });
 };
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
-  const user = await User.findOne({ email });
-  if (!user || !(await bcrypt.compare(password, user.password)))
-    return res.status(401).json({ error: 'Invalid credentials' });
 
+  // Check if user exists
+  const user = await User.findOne({ email });
+  if (!user || !(await bcrypt.compare(password, user.password))) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+
+  // Generate tokens
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
 
+  // Save refresh token
   await Token.create({ userId: user._id, token: refreshToken });
 
-  res.json({ accessToken, refreshToken });
+  // Return tokens and user info
+  res.json({
+    message: 'Login successful',
+    accessToken,
+    refreshToken,
+    user: {
+      id: user._id,
+      name: user.name,
+      phone: user.phone,
+      email: user.email,
+    },
+  });
 };
 
 exports.refresh = async (req, res) => {

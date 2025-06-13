@@ -22,16 +22,26 @@ const authCtrl = require('../controllers/auth.controller');
  *           schema:
  *             type: object
  *             required:
+ *               - name
+ *               - phone
  *               - email
  *               - password
  *             properties:
+ *               name:
+ *                 type: string
+ *                 example: John Doe
+ *               phone:
+ *                 type: string
+ *                 example: 9876543210
  *               email:
  *                 type: string
+ *                 example: john@example.com
  *               password:
  *                 type: string
+ *                 example: securePassword123
  *     responses:
- *       201:
- *         description: User created
+ *       200:
+ *         description: User registered successfully
  */
 router.post('/signup', authCtrl.signup);
 
@@ -53,11 +63,33 @@ router.post('/signup', authCtrl.signup);
  *             properties:
  *               email:
  *                 type: string
+ *                 example: john@example.com
  *               password:
  *                 type: string
+ *                 example: securePassword123
  *     responses:
  *       200:
  *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 accessToken:
+ *                   type: string
+ *                 refreshToken:
+ *                   type: string
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     phone:
+ *                       type: string
+ *                     email:
+ *                       type: string
  */
 router.post('/login', authCtrl.login);
 

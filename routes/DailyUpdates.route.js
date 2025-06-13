@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { predictStocks } = require("../controllers/DailyUpdatesController");
+const { predictStocks, getLatestPrediction } = require("../controllers/DailyUpdatesController");
 
 /**
  * @swagger
@@ -22,5 +22,21 @@ const { predictStocks } = require("../controllers/DailyUpdatesController");
  *         description: Internal error
  */
 router.post("/", predictStocks);
+
+/**
+ * @swagger
+ * /api/dailyUpdates/latestDailyUpdates:
+ *   get:
+ *     summary: Get latest AI prediction
+ *     tags: [dailyUpdates]
+ *     responses:
+ *       200:
+ *         description: Latest prediction fetched
+ *       404:
+ *         description: No data found
+ *       500:
+ *         description: Internal error
+ */
+router.get("/latestDailyUpdates", getLatestPrediction);
 
 module.exports = router;
