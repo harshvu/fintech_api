@@ -30,8 +30,8 @@ const predictStocks = async (req, res) => {
 };
 const getLatestPrediction = async (req, res) => {
   try {
-    const latest = await PredictedStock.findOne().sort({ timestamp: -1 }).limit(1);
-    
+    const latest = await PredictedStock.findOne().sort({ createdAt: -1 }).limit(1);
+
     if (!latest) {
       return res.status(404).json({ message: "No prediction data found" });
     }
