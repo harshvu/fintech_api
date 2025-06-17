@@ -57,5 +57,26 @@ router.get('/', auth, stockCtrl.getUserStocks);
  *         description: Server error
  */
 router.post('/add', auth, stockCtrl.addStocksToPortfolio);
-
+/**
+ * @swagger
+ * /api/portfolio/{id}:
+ *   delete:
+ *     summary: Delete a stock from the user's portfolio by ID
+ *     tags: [Portfolio]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The stock ID to delete
+ *     responses:
+ *       200:
+ *         description: Stock deleted successfully
+ *       404:
+ *         description: Stock not found
+ */
+router.delete('/:id', auth, stockCtrl.deleteStockById);
 module.exports = router;

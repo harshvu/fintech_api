@@ -76,10 +76,10 @@ const getLatestPrediction = async (req, res) => {
           }
        // 🔐 Extracted from JWT token by middleware
 
-    const latestPrediction = await PredictedStock
-      .findOne({ userId })
-      .sort({ createdAt: -1 })
-      .explain();
+     const latestPrediction = await PredictedStock
+          .findOne({ userId })
+          .sort({ createdAt: -1 })
+          .select('aiResponse -_id'); 
       
     // console.log("MongoDB explain output:", JSON.stringify(latestPrediction, null, 2));
 

@@ -74,3 +74,23 @@ exports.getUserStocks = async (req, res) => {
     res.status(500).json({ error: 'Error fetching stocks' });
   }
 };
+exports.deleteStockById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deleted = await UserStockPortfolio.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return res.status(404).json({ message: 'Stock not found' });
+    }
+
+    return res.status(200).json({
+      message: '✅ Stock deleted successfully',
+      deletedStock: deleted,
+    });
+
+  } catch (error) {
+    console.error('Delete stock error:', error.message);
+    return res.status(500).json({ error: 'Failed to delete stock', details: error.message });
+  }
+};
