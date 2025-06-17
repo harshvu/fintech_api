@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { predictStocks } = require("../controllers/predictControllerIn");
+const { predictStocks,getLatestPrediction } = require("../controllers/predictControllerIn");
 
 /**
  * @swagger
@@ -23,4 +23,19 @@ const { predictStocks } = require("../controllers/predictControllerIn");
  */
 router.post("/", predictStocks);
 
+/**
+ * @swagger
+ * /api/predicton/latest:
+ *   get:
+ *     summary: Get latest AI prediction per user
+ *     tags: [Predictin]
+ *     responses:
+ *       200:
+ *         description: Latest predictions fetched
+ *       404:
+ *         description: No predictions found
+ *       500:
+ *         description: Internal error
+ */
+router.get("/latest", auth, getLatestPrediction);
 module.exports = router;
