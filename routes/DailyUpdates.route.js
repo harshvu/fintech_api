@@ -5,7 +5,7 @@ const { predictStocks, getLatestPrediction } = require("../controllers/DailyUpda
 /**
  * @swagger
  * tags:
- *   name: dailyUpdates stocks
+ *   name: DailyUpdates stocks
  *   description: AI Prediction for Stocks
  */
 
@@ -14,7 +14,7 @@ const { predictStocks, getLatestPrediction } = require("../controllers/DailyUpda
  * /api/dailyUpdates:
  *   post:
  *     summary: Trigger AI prediction per user (no auth)
- *     tags: [dailyUpdates]
+ *     tags: [DailyUpdates stocks]
  *     responses:
  *       200:
  *         description: DailyUpdates success
@@ -28,7 +28,7 @@ router.post("/", predictStocks);
  * /api/dailyUpdates/latestDailyUpdates:
  *   get:
  *     summary: Get latest AI prediction
- *     tags: [dailyUpdates]
+ *     tags: [DailyUpdates stocks]
  *     responses:
  *       200:
  *         description: Latest prediction fetched

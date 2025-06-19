@@ -14,7 +14,7 @@ const auth = require("../middlewares/auth.middleware");
  * /api/predict:
  *   post:
  *     summary: Trigger AI prediction per user (no auth)
- *     tags: [Predict]
+ *     tags: [AI Prediction For Pre Market Stocks]
  *     responses:
  *       200:
  *         description: Prediction success
@@ -28,7 +28,7 @@ router.post("/", predictStocks);
  * /api/predict/latest:
  *   get:
  *     summary: Get latest AI prediction per user
- *     tags: [Predict]
+ *     tags: [AI Prediction For Pre Market Stocks]
  *     responses:
  *       200:
  *         description: Latest predictions fetched
