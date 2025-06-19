@@ -5,6 +5,8 @@ const { sendToAIPredictModel } = require("../services/aiServicePredictIn");
 const predictStocks = async (req, res) => {
   try {
     const io = req.app.get("io");
+
+    // Step 1: Fetch all user portfolios
     const userStocks = await UserStockPortfolio.aggregate([
       {
         $group: {
@@ -14,43 +16,61 @@ const predictStocks = async (req, res) => {
       }
     ]);
 
+    // Step 2: Create a Set of all unique stocks across all users
+    const globalStockSet = new Set();
+
+    const userMap = userStocks.map(({ _id, stocks }) => {
+      const sanitized = stocks.map(s => s.replace(/\.BO$/, '').toUpperCase());
+      sanitized.forEach(stock => globalStockSet.add(stock));
+      return { userId: _id, stocks: sanitized };
+    });
+
+    const uniqueStockList = Array.from(globalStockSet).sort();
+
+    // Step 3: Prepare payload and send to AI once
+    const payload = {
+      ticker: uniqueStockList,
+      include_risk_analysis: true,
+      include_technical_levels: true,
+      include_trading_signals: true,
+      include_market_context: true,
+      custom_analysis: {
+        additionalProp1: {}
+      }
+    };
+
+    const aiResponse = await sendToAIPredictModel(payload);
+
+    // Step 4: Store and emit per user, only matching stocks from AI response
     const results = [];
 
-    for (const user of userStocks) {
-      const { _id: userId, stocks } = user;
+    for (const { userId, stocks } of userMap) {
+      const filteredResponse = {};
 
-      const alreadyPredicted = await PredictedStock.findOne({ userId });
-      if (alreadyPredicted) {
-        console.log(`Prediction already exists for user ${userId}, skipping.`);
-        continue;
+      // Filter only the user's stocks from the AI response
+      for (const stock of stocks) {
+        if (aiResponse[stock]) {
+          filteredResponse[stock] = aiResponse[stock];
+        }
       }
-
-      const sanitizedTickers = stocks.map(s => s.replace(/\.BO$/, '').toUpperCase());
-
-      const payload = {
-        ticker: sanitizedTickers,
-        user_id:userId
-      };
-
-      const aiResponse = await sendToAIPredictModel(payload);
 
       await PredictedStock.create({
         userId,
         stockNames: stocks,
-        aiResponse
+        aiResponse: filteredResponse
       });
 
-      // Emit real-time socket event for this user
-      io.emit("In_market_ prediction_complete", {
+      io.emit("prediction_complete", {
         userId,
-        message: `✅ AI prediction completed for user ${userId}`,
-        aiResponse
+        message: `✅ AI prediction complete for user ${userId}`,
+        aiResponse: filteredResponse
       });
 
       results.push({ userId, status: "saved" });
     }
 
-    return res.json({ message: "Prediction process complete", results });
+    return res.json({ message: "✅ AI called once, user responses saved", results });
+
   } catch (error) {
     console.error("Prediction error:", error.message);
     return res.status(500).json({ error: "Prediction failed", details: error.message });

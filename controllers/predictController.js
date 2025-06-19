@@ -7,7 +7,7 @@ const predictStocks = async (req, res) => {
   try {
     const io = req.app.get("io");
 
-    // 1. Fetch each user's stock list
+    // Step 1: Fetch all user portfolios
     const userStocks = await UserStockPortfolio.aggregate([
       {
         $group: {
@@ -17,67 +17,67 @@ const predictStocks = async (req, res) => {
       }
     ]);
 
-    const stockSetMap = new Map(); // { stockKey -> [userInfo, ...] }
+    // Step 2: Create a Set of all unique stocks across all users
+    const globalStockSet = new Set();
 
-    // 2. Group users by their stock list
-    for (const user of userStocks) {
-      const { _id: userId, stocks } = user;
+    const userMap = userStocks.map(({ _id, stocks }) => {
+      const sanitized = stocks.map(s => s.replace(/\.BO$/, '').toUpperCase());
+      sanitized.forEach(stock => globalStockSet.add(stock));
+      return { userId: _id, stocks: sanitized };
+    });
 
-      const sanitizedTickers = stocks.map(s => s.replace(/\.BO$/, '').toUpperCase()).sort();
-      const stockKey = sanitizedTickers.join(",");
+    const uniqueStockList = Array.from(globalStockSet).sort();
 
-      if (!stockSetMap.has(stockKey)) {
-        stockSetMap.set(stockKey, {
-          tickers: sanitizedTickers,
-          users: []
-        });
+    // Step 3: Prepare payload and send to AI once
+    const payload = {
+      ticker: uniqueStockList,
+      include_risk_analysis: true,
+      include_technical_levels: true,
+      include_trading_signals: true,
+      include_market_context: true,
+      custom_analysis: {
+        additionalProp1: {}
       }
+    };
 
-      stockSetMap.get(stockKey).users.push({ userId, stockNames: sanitizedTickers });
-    }
+    const aiResponse = await sendToAIPredictModel(payload);
 
+    // Step 4: Store and emit per user, only matching stocks from AI response
     const results = [];
 
-    // 3. For each unique stock group, call AI once
-    for (const [key, { tickers, users }] of stockSetMap.entries()) {
-      const payload = {
-        ticker: tickers,
-        include_risk_analysis: true,
-        include_technical_levels: true,
-        include_trading_signals: true,
-        include_market_context: true,
-        custom_analysis: {
-          additionalProp1: {}
+    for (const { userId, stocks } of userMap) {
+      const filteredResponse = {};
+
+      // Filter only the user's stocks from the AI response
+      for (const stock of stocks) {
+        if (aiResponse[stock]) {
+          filteredResponse[stock] = aiResponse[stock];
         }
-      };
-
-      const aiResponse = await sendToAIPredictModel(payload);
-
-      // 4. Save for each user individually
-      for (const { userId, stockNames } of users) {
-        await PredictedStock.create({
-          userId,
-          stockNames,
-          aiResponse
-        });
-
-        io.emit("prediction_complete", {
-          userId,
-          message: `✅ AI prediction completed for user ${userId}`,
-          aiResponse
-        });
-
-        results.push({ userId, status: "saved" });
       }
+
+      await PredictedStock.create({
+        userId,
+        stockNames: stocks,
+        aiResponse: filteredResponse
+      });
+
+      io.emit("prediction_complete", {
+        userId,
+        message: `✅ AI prediction complete for user ${userId}`,
+        aiResponse: filteredResponse
+      });
+
+      results.push({ userId, status: "saved" });
     }
 
-    return res.json({ message: "✅ Prediction complete", results });
+    return res.json({ message: "✅ AI called once, user responses saved", results });
 
   } catch (error) {
     console.error("Prediction error:", error.message);
     return res.status(500).json({ error: "Prediction failed", details: error.message });
   }
 };
+
 
 const getLatestPrediction = async (req, res) => {
   try {
