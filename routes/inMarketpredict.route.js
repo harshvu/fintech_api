@@ -6,8 +6,8 @@ const auth = require("../middlewares/auth.middleware");
 /**
  * @swagger
  * tags:
- *   name: PredictIn
- *   description: AI Prediction for Stocks
+ *   name:  Live Market Stock Prediction
+ *   description: AI Prediction for Live Stocks
  */
 
 /**
@@ -26,7 +26,7 @@ router.post("/", predictStocks);
 
 /**
  * @swagger
- * /api/predicton/latest:
+ * /api/predictIn/latest:
  *   get:
  *     summary: Get latest AI prediction per user
  *     tags: [Predictin]

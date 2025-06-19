@@ -5,7 +5,7 @@ const { predictStocks, getLatestPrediction } = require("../controllers/DailyUpda
 /**
  * @swagger
  * tags:
- *   name: DailyUpdates
+ *   name: dailyUpdates stocks
  *   description: AI Prediction for Stocks
  */
 

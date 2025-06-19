@@ -5,8 +5,8 @@ const auth = require("../middlewares/auth.middleware");
 /**
  * @swagger
  * tags:
- *   name: Predict
- *   description: AI Prediction for Stocks
+ *   name: Pre Market Predict
+ *   description: AI Prediction For Pre Market Stocks
  */
 
 /**

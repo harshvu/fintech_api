@@ -41,17 +41,31 @@ const predictStocks = async (req, res) => {
 
     const aiResponse = await sendToAIPredictModel(payload);
 
-    // Step 4: Store and emit per user, only matching stocks from AI response
+    // 🔁 Step 3.5: Convert { res1, res2, ... } into { ticker: data }
+    const tickerToDataMap = {};
+    for (const key in aiResponse) {
+      const result = aiResponse[key];
+      const ticker = result?.ticker?.toUpperCase();
+      if (ticker) {
+        tickerToDataMap[ticker] = result;
+      }
+    }
+
+    // Step 4: Store and emit per user
     const results = [];
 
     for (const { userId, stocks } of userMap) {
       const filteredResponse = {};
 
-      // Filter only the user's stocks from the AI response
       for (const stock of stocks) {
-        if (aiResponse[stock]) {
-          filteredResponse[stock] = aiResponse[stock];
+        if (tickerToDataMap[stock]) {
+          filteredResponse[stock] = tickerToDataMap[stock];
         }
+      }
+
+      if (Object.keys(filteredResponse).length === 0) {
+        console.log(`No AI response found for user ${userId}, skipping.`);
+        continue;
       }
 
       await PredictedStock.create({
@@ -76,6 +90,7 @@ const predictStocks = async (req, res) => {
     return res.status(500).json({ error: "Prediction failed", details: error.message });
   }
 };
+
 const getLatestPrediction = async (req, res) => {
   try {
         const authHeader = req.headers.authorization;
