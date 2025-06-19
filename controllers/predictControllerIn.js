@@ -74,7 +74,7 @@ const predictStocks = async (req, res) => {
         aiResponse: filteredResponse
       });
 
-      io.emit("prediction_complete", {
+      io.emit("prediction_in_market", {
         userId,
         message: `✅ AI prediction complete for user ${userId}`,
         aiResponse: filteredResponse
