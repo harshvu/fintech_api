@@ -1,3 +1,4 @@
+const jwt = require('jsonwebtoken');
 const UserStockPortfolio = require("../models/stockPortfolio.model");
 const PredictedStock = require("../models/predictedStockIn");
 const { sendToAIPredictModel } = require("../services/aiServicePredictIn");
