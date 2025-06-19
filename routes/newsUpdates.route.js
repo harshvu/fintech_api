@@ -14,7 +14,7 @@ const { predictStocks ,getLatestPrediction } = require("../controllers/newsUpdat
  * /api/newsUpdates:
  *   post:
  *     summary: Trigger AI prediction per user (no auth)
- *     tags: [newsUpdates]
+ *     tags: [NewsUpdates]
  *     responses:
  *       200:
  *         description: NewsUpdates success
@@ -27,7 +27,7 @@ router.post("/", predictStocks);
  * /api/newsUpdates/latestnewsUpdates:
  *   get:
  *     summary: Get latest AI prediction
- *     tags: [newsUpdates]
+ *     tags: [NewsUpdates]
  *     responses:
  *       200:
  *         description: Latest prediction fetched
