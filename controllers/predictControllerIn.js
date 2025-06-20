@@ -84,7 +84,7 @@ const predictStocks = async (req, res) => {
       results.push({ userId, status: "saved" });
     }
 
-    return res.json({ message: "✅ AI called once, user responses saved", results });
+    return res.json({ message: "✅ AI called once, user responses saved", results ,airesposne});
 
   } catch (error) {
     console.error("Prediction error:", error.message);
