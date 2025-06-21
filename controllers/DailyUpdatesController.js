@@ -4,12 +4,20 @@ const { sendToAIPredictModel } = require("../services/aiDailyUpdates");
 const predictStocks = async (req, res) => {
   try {
     const io = req.app.get("io");
-    const aiResponse = await sendToAIPredictModel(); // assumes default inside service
- // 🔹 Save AI response with timestamp only
+
+    // Define input schema
+    const payload = {
+      max_stocks: 15,
+      type_of_market: ["small_cap", "mid_cap", "large_cap"]
+    };
+
+    // 🔹 Send payload to AI model
+    const aiResponse = await sendToAIPredictModel(payload);
+
+    // 🔹 Save AI response with timestamp only
     const saved = await PredictedStock.create({
       aiResponse,
       timestamp: new Date()
-      
     });
 
     // 🔹 Broadcast via Socket.IO
@@ -28,6 +36,7 @@ const predictStocks = async (req, res) => {
     return res.status(500).json({ error: "Prediction failed", details: error.message });
   }
 };
+
 const getLatestPrediction = async (req, res) => {
   try {
     const latest = await PredictedStock.findOne().sort({ createdAt: -1 }).limit(1);

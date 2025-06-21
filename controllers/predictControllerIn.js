@@ -30,12 +30,12 @@ const predictStocks = async (req, res) => {
 
     // Step 3: Prepare payload and send to AI once
     const payload = {
-      ticker: uniqueStockList,
+      ticker: uniqueStockList
      
     };
 
     const aiResponse = await sendToAIPredictModel(payload);
-
+    console.log()
     // 🔁 Step 3.5: Convert { res1, res2, ... } into { ticker: data }
     const tickerToDataMap = {};
     for (const key in aiResponse) {
@@ -78,7 +78,7 @@ const predictStocks = async (req, res) => {
       results.push({ userId, status: "saved" });
     }
 
-    return res.json({ message: "✅ AI called once, user responses saved", results ,airesposne});
+    return res.json({ message: "✅ AI called once, user responses saved", results , airesposne});
 
   } catch (error) {
     console.error("Prediction error:", error.message);
