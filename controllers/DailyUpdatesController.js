@@ -8,7 +8,7 @@ const predictStocks = async (req, res) => {
     // Define input schema
     const payload = {
       max_stocks: 15,
-      type_of_market: ["small_cap", "mid_cap", "large_cap"]
+      type_of_market: ["small_cap", "mid_cap", "large_cap","micro_cap","penny_stock"]
     };
 
     // 🔹 Send payload to AI model
