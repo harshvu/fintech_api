@@ -17,7 +17,7 @@ const predictStocks = async (req, res) => {
       }
     ]);
 
-    // Step 2: Create global unique stock list
+    // Step 2: Create a Set of all unique stocks across all users
     const globalStockSet = new Set();
 
     const userMap = userStocks.map(({ _id, stocks }) => {
@@ -28,17 +28,18 @@ const predictStocks = async (req, res) => {
 
     const uniqueStockList = Array.from(globalStockSet).sort();
 
-    // Step 3: Send to AI once
+    // Step 3: Prepare payload and send to AI once
     const payload = {
       stocks: uniqueStockList,
       processing_mode: "auto",
       batch_size: 5,
       max_concurrent: 3
+     
     };
 
     const aiResponse = await sendToAIPredictModel(payload);
 
-    // Step 4: Create ticker-to-data map
+    // 🔁 Step 3.5: Convert { res1, res2, ... } into { ticker: data }
     const tickerToDataMap = {};
     const resultsFromAI = aiResponse.results || {};
 
@@ -50,7 +51,7 @@ const predictStocks = async (req, res) => {
       }
     }
 
-    // Step 5: Store and emit per user
+    // Step 4: Store and emit per user
     const results = [];
 
     for (const { userId, stocks } of userMap) {
@@ -82,17 +83,13 @@ const predictStocks = async (req, res) => {
       results.push({ userId, status: "saved" });
     }
 
-    return res.json({
-      message: "✅ AI called once, user responses saved",
-      results
-    });
+    return res.json({ message: "✅ AI called once, user responses saved", results});
 
   } catch (error) {
     console.error("Prediction error:", error.message);
     return res.status(500).json({ error: "Prediction failed", details: error.message });
   }
 };
-
 
 
 const getLatestPrediction = async (req, res) => {
