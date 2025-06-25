@@ -40,14 +40,13 @@ const predictStocks = async (req, res) => {
 
     // Step 4: Create ticker-to-data map
     const tickerToDataMap = {};
+    const resultsFromAI = aiResponse.results || {};
 
-    for (const ticker in aiResponse) {
-      const entry = aiResponse[ticker];
-
-      // Some entries might be empty or have no valid "result"
-      if (entry && entry.result && Object.keys(entry.result).length > 0) {
-        const cleanTicker = ticker.toUpperCase();
-        tickerToDataMap[cleanTicker] = entry;
+    for (const key in resultsFromAI) {
+      const result = resultsFromAI[key];
+      const ticker = result?.ticker?.toUpperCase();
+      if (ticker) {
+        tickerToDataMap[ticker] = result;
       }
     }
 
