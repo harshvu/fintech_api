@@ -30,7 +30,8 @@ const predictStocks = async (req, res) => {
 
     // Step 3: Prepare payload and send to AI once
     const payload = {
-      ticker: uniqueStockList
+      ticker: uniqueStockList,
+      is_market_open:"open"
      
     };
 

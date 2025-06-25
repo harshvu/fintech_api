@@ -30,14 +30,8 @@ const predictStocks = async (req, res) => {
 
     // Step 3: Prepare payload and send to AI once
     const payload = {
-      ticker: uniqueStockList,
-      include_risk_analysis: true,
-      include_technical_levels: true,
-      include_trading_signals: true,
-      include_market_context: true,
-      custom_analysis: {
-        additionalProp1: {}
-      }
+      ticker: uniqueStockList
+     
     };
 
     const aiResponse = await sendToAIPredictModel(payload);
