@@ -35,11 +35,13 @@ const predictStocks = async (req, res) => {
     };
 
     const aiResponse = await sendToAIPredictModel(payload);
-    console.log()
+
     // 🔁 Step 3.5: Convert { res1, res2, ... } into { ticker: data }
     const tickerToDataMap = {};
-    for (const key in aiResponse) {
-      const result = aiResponse[key];
+    const resultsFromAI = aiResponse.results || {};
+
+    for (const key in resultsFromAI) {
+      const result = resultsFromAI[key];
       const ticker = result?.ticker?.toUpperCase();
       if (ticker) {
         tickerToDataMap[ticker] = result;
