@@ -30,7 +30,7 @@ const predictStocks = async (req, res) => {
 
     // Step 3: Prepare payload and send to AI once
     const payload = {
-      ticker: uniqueStockList,
+      stocks: uniqueStockList,
        processing_mode: "auto",
         batch_size: 5,
         max_concurrent: 3
