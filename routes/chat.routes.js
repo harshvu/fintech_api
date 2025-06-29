@@ -12,10 +12,10 @@ const auth = require("../middlewares/auth.middleware");
 
 /**
  * @swagger
- * /api/chat/save:
+ * /api/search/save:
  *   post:
  *     summary: Save a chat message
- *     tags: [Chats]
+ *     tags: [Search]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -43,10 +43,10 @@ router.post("/save", auth, chatCtrl.saveChat);
 
 /**
  * @swagger
- * /api/chat/history:
+ * /api/search/history:
  *   get:
  *     summary: Get grouped chat history by chat ID
- *     tags: [Chats]
+ *     tags: [Search]
  *     security:
  *       - bearerAuth: []
  *     responses:
