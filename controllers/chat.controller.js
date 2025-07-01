@@ -48,6 +48,7 @@ exports.getChatHistory = async (req, res) => {
       {
         $group: {
           _id: "$chatId",
+          first_question: { $first: "$question" },
           messages: {
             $push: {
               question: "$question",
@@ -60,9 +61,36 @@ exports.getChatHistory = async (req, res) => {
       { $sort: { "_id": -1 } }
     ]);
 
-    return res.json({ chats });
+    const response = {
+      sidebar: chats.map(c => ({
+        chatId: c._id,
+        first_question: c.first_question
+      })),
+      last_chat_id: chats[0]?._id || null,
+      last_chat_data: chats[0]?.messages || []
+    };
+
+    return res.json(response);
   } catch (error) {
     console.error("GetChatHistory Error:", error.message);
     return res.status(500).json({ error: "Failed to fetch chat history" });
   }
 };
+exports.getChatById = async (req, res) => {
+  const userId = req.user.id;
+  const chatId = req.params.chatId;
+
+  try {
+    const chatData = await UserChat.find({ userId, chatId }).sort({ createdAt: 1 });
+
+    if (!chatData || chatData.length === 0) {
+      return res.status(404).json({ message: "Chat not found or unauthorized access." });
+    }
+
+    return res.json({ chatId, chatData });
+  } catch (error) {
+    console.error("GetChatById Error:", error.message);
+    return res.status(500).json({ error: "Failed to fetch chat messages" });
+  }
+};
+

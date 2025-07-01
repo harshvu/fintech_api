@@ -54,5 +54,25 @@ router.post("/save", auth, chatCtrl.saveChat);
  *         description: Grouped chat history
  */
 router.get("/history", auth, chatCtrl.getChatHistory);
+/**
+ * @swagger
+ * /api/search/{chatId}:
+ *   get:
+ *     summary: Get chat messages by chat ID
+ *     tags: [Chats]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chatId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The ID of the chat to retrieve
+ *     responses:
+ *       200:
+ *         description: Chat messages for the specified chat ID
+ */
+router.get("/:chatId", auth, chatCtrl.getChatById);
 
 module.exports = router;
