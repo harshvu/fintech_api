@@ -19,6 +19,7 @@ app.use(morgan('dev')); // Log HTTP requests to console
   app.use('/api/predictIn', require('./routes/inMarketpredict.route'));
   app.use('/api/newsUpdates', require('./routes/newsUpdates.route'));
   app.use('/api/search', require('./routes/chat.routes'));
+  app.use('/api/feedback', require('./routes/feedback.routes'));
 // Swagger Docs
 const { swaggerUi, swaggerSpec } = require('./docs/swagger');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

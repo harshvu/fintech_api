@@ -81,7 +81,7 @@ exports.getChatById = async (req, res) => {
   const chatId = req.params.chatId;
 
   try {
-    const chatData = await UserChat.find({ userId, chatId }).sort({ createdAt: 1 });
+    const chatData = await UserChat.find({ userId, chatId }).sort({ createdAt: -1 });
 
     if (!chatData || chatData.length === 0) {
       return res.status(404).json({ message: "Chat not found or unauthorized access." });
