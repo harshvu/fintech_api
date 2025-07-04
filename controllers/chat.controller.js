@@ -57,9 +57,11 @@ exports.getChatHistory = async (req, res) => {
             }
           }
         }
-      },
-      { $sort: { "_id": -1 } }
+      }
     ]);
+
+    // 🔁 Sort chat groups by _id descending (latest chats first)
+    chats.sort((a, b) => b._id.localeCompare(a._id));
 
     const response = {
       sidebar: chats.map(c => ({
@@ -73,9 +75,10 @@ exports.getChatHistory = async (req, res) => {
     return res.json(response);
   } catch (error) {
     console.error("GetChatHistory Error:", error.message);
-    return res.status(500).json({ error: "Failed to fetch chat history" });
+    return res.status(500).json({ error: "Failed to fetch chat history" }); 
   }
 };
+
 exports.getChatById = async (req, res) => {
   const userId = req.user.id;
   const chatId = req.params.chatId;
