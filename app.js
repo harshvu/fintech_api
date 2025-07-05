@@ -20,6 +20,7 @@ app.use(morgan('dev')); // Log HTTP requests to console
   app.use('/api/newsUpdates', require('./routes/newsUpdates.route'));
   app.use('/api/search', require('./routes/chat.routes'));
   app.use('/api/feedback', require('./routes/feedback.routes'));
+  app.use('/api/validatepredictpre', require('./routes/validatepredictpre.route'));
 // Swagger Docs
 const { swaggerUi, swaggerSpec } = require('./docs/swagger');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
