@@ -1,3 +1,4 @@
+// models/validatePredictedStock.js
 const mongoose = require("mongoose");
 
 const summaryItemSchema = new mongoose.Schema({

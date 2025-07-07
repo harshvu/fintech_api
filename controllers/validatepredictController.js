@@ -43,7 +43,7 @@ const validatepredictStocks = async (req, res) => {
 
     for (const { userId, stocks } of userMap) {
       const userAIData = {};
-      const summaryMap = {}; // 👈 important: plain JS object
+      const summaryMap = {}; // ✅ Plain Object
 
       for (const stock of stocks) {
         const normalizedStock = stock.toUpperCase();
@@ -69,11 +69,12 @@ const validatepredictStocks = async (req, res) => {
 
       if (Object.keys(userAIData).length === 0) continue;
 
+      // ✅ Save with PLAIN summary object
       await validatePredictedStock.create({
         userId,
         date: formattedDate,
         aiResponse: userAIData,
-        summary: summaryMap  // ✅ plain object with string keys
+        summary: summaryMap
       });
 
       results.push({ userId, savedStocks: Object.keys(userAIData).length });
