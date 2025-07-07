@@ -91,6 +91,7 @@ const validatepredictStocks = async (req, res) => {
 };
 
 // ✅ Controller: Get Summary Data by User
+
 const getSummaryByUser = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -113,10 +114,10 @@ const getSummaryByUser = async (req, res) => {
 
     for (const record of userRecords) {
       const isToday = record.date === today;
-      const summary = record.summary || [];
+      const summary = record.summary || {};
 
-      for (const data of summary) {
-        const stockSymbol = data.stock;
+      for (const stockSymbol in summary) {
+        const data = summary[stockSymbol];
         if (!stockMap[stockSymbol]) {
           stockMap[stockSymbol] = {
             overall: [],
@@ -125,6 +126,7 @@ const getSummaryByUser = async (req, res) => {
         }
 
         stockMap[stockSymbol].overall.push(data);
+
         if (isToday) {
           stockMap[stockSymbol].today = data;
         }
@@ -149,7 +151,7 @@ const getSummaryByUser = async (req, res) => {
       const today_average = todayData ? {
         averageAccuracy: todayData.averageAccuracy || 0,
         avgPredictedGap: todayData.avgPredictedGap || 0,
-        avgActualGap: todayData.avgActualGap ? 100 : 0,
+        avgActualGap: todayData.avgActualGap || 0,
         openingRangeAccuracyRate: todayData.openingRangeAccuracyRate ? 100 : 0,
         supportLevelAccuracyRate: todayData.supportLevelAccuracyRate ? 100 : 0,
         resistanceLevelAccuracyRate: todayData.resistanceLevelAccuracyRate ? 100 : 0
@@ -168,6 +170,7 @@ const getSummaryByUser = async (req, res) => {
   }
 };
 
+// Helpers
 function average(arr) {
   if (!arr.length) return 0;
   const total = arr.reduce((sum, v) => sum + (parseFloat(v) || 0), 0);
