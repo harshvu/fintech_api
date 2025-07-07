@@ -7,7 +7,7 @@ const validatepredictStocks = async (req, res) => {
   try {
     const io = req.app.get("io");
 
-    // 1. Fetch all user portfolios
+    // Step 1: Fetch all user portfolios
     const userStocks = await UserStockPortfolio.aggregate([
       {
         $group: {
@@ -17,9 +17,8 @@ const validatepredictStocks = async (req, res) => {
       }
     ]);
 
+    // Step 2: Prepare global stock list and user mapping
     const globalStockSet = new Set();
-
-    // 2. Clean stock list and prepare user mapping
     const userMap = userStocks.map(({ _id, stocks }) => {
       const sanitized = stocks.map(s => s.replace(/\.BO$/, '').toUpperCase());
       sanitized.forEach(stock => globalStockSet.add(stock));
@@ -30,7 +29,7 @@ const validatepredictStocks = async (req, res) => {
     const today = new Date();
     const formattedDate = today.toISOString().split("T")[0];
 
-    // 3. Send to AI once
+    // Step 3: Call AI model
     const payload = {
       stock_name: uniqueStockList,
       date: formattedDate
@@ -39,26 +38,25 @@ const validatepredictStocks = async (req, res) => {
     const aiResponse = await sendToAIPredictModel(payload);
     const rawResults = aiResponse.results || {};
 
-    // 4. Normalize AI response keys for lookup
+    // Normalize keys for lookup (HDFCBANK.NS → HDFCBANK)
     const aiResultMap = {};
     for (const key in rawResults) {
       const normalizedKey = key.replace(/\.NS$/, '').toUpperCase();
       aiResultMap[normalizedKey] = rawResults[key];
     }
 
+    // Step 4: Process and store per user
     const results = [];
 
-    // 5. Process each user
     for (const { userId, stocks } of userMap) {
       const userAIData = {};
 
       for (const stock of stocks) {
         const data = aiResultMap[stock];
-
         if (data && typeof data === "object") {
           userAIData[stock] = data;
 
-          // Update aggregate stats
+          // Save to aggregate stats collection
           await validatedStockStats.updateOne(
             { userId, stock },
             {
@@ -83,13 +81,12 @@ const validatepredictStocks = async (req, res) => {
         }
       }
 
-      // Skip if no valid AI data
       if (Object.keys(userAIData).length === 0) {
         console.log(`❌ No AI response found for user ${userId}`);
         continue;
       }
 
-      // ✅ Save daily raw response
+      // Save full JSON response for the day
       await validatePredictedStock.create({
         userId,
         date: formattedDate,
