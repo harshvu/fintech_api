@@ -3,10 +3,15 @@ const UserStockPortfolio = require("../models/stockPortfolio.model");
 const validatePredictedStock = require("../models/validatepredictedStock");
 const { sendToAIPredictModel } = require("../services/aiServicePredictvalidatepre");
 
+const validatePredictedStock = require("../models/validatepredictedStock");
+const UserStockPortfolio = require("../models/stockPortfolio.model");
+const { sendToAIPredictModel } = require("../services/aiServicePredictvalidatepre");
+
 const validatepredictStocks = async (req, res) => {
   try {
     const io = req.app.get("io");
 
+    // Step 1: Fetch all user portfolios
     const userStocks = await UserStockPortfolio.aggregate([
       {
         $group: {
@@ -16,9 +21,10 @@ const validatepredictStocks = async (req, res) => {
       }
     ]);
 
+    // Step 2: Prepare global stock list and user mapping
     const globalStockSet = new Set();
     const userMap = userStocks.map(({ _id, stocks }) => {
-      const sanitized = stocks.map(s => s.trim().toUpperCase()); // Preserve suffixes like .NS
+      const sanitized = stocks.map(s => s.trim().toUpperCase()); // Keep suffix like .NS
       sanitized.forEach(stock => globalStockSet.add(stock));
       return { userId: _id, stocks: sanitized };
     });
@@ -27,6 +33,7 @@ const validatepredictStocks = async (req, res) => {
     const today = new Date();
     const formattedDate = today.toISOString().split("T")[0];
 
+    // Step 3: Call AI model
     const payload = {
       stock_name: uniqueStockList,
       date: formattedDate
@@ -39,7 +46,7 @@ const validatepredictStocks = async (req, res) => {
 
     const rawResults = aiResponse.results || {};
 
-    // ✅ Normalize AI keys to UPPERCASE
+    // Normalize AI response keys to uppercase
     const aiResultMap = {};
     for (const key in rawResults) {
       aiResultMap[key.trim().toUpperCase()] = rawResults[key];
@@ -49,7 +56,7 @@ const validatepredictStocks = async (req, res) => {
 
     for (const { userId, stocks } of userMap) {
       const userAIData = {};
-      const summary = {};
+      const summaryArray = [];
 
       console.log(`👤 Processing user: ${userId}, Stocks: ${stocks.join(",")}`);
 
@@ -66,18 +73,17 @@ const validatepredictStocks = async (req, res) => {
 
         userAIData[normalizedStock] = data;
 
-        summary[normalizedStock] = {
-          stock_symbol: data.stock_symbol,
-          overall_accuracy_score: (data.overall_accuracy_score || 0) * 100,
-          predicted_gap: data.predicted_gap,
-          actual_gap: data.actual_gap,
-          opening_range_accuracy: data.opening_range_accuracy ? 1 : 0,
-          predicted_range_lower: data.predicted_range_lower,
-          predicted_range_upper: data.predicted_range_upper,
-          actual_opening: data.actual_opening,
-          support_level_accuracy: data.support_level_accuracy ? 1 : 0,
-          resistance_level_accuracy: data.resistance_level_accuracy ? 1 : 0
-        };
+        summaryArray.push({
+          stock: normalizedStock,
+          recordCount: 1,
+          averageAccuracy: (data.overall_accuracy_score || 0) * 100,
+          avgPredictedGap: data.predicted_gap,
+          avgActualGap: data.actual_gap,
+          openingRangeAccuracyRate: data.opening_range_accuracy ? 1 : 0,
+          supportLevelAccuracyRate: data.support_level_accuracy ? 1 : 0,
+          resistanceLevelAccuracyRate: data.resistance_level_accuracy ? 1 : 0,
+          lastUpdated: new Date()
+        });
       }
 
       if (Object.keys(userAIData).length === 0) {
@@ -86,13 +92,13 @@ const validatepredictStocks = async (req, res) => {
       }
 
       console.log(`💾 Saving to DB for user: ${userId}`);
-      console.log("🧾 Summary:", summary);
+      console.log("🧾 Summary:", summaryArray);
 
       await validatePredictedStock.create({
         userId,
         date: formattedDate,
         aiResponse: userAIData,
-        summary
+        summary: summaryArray
       });
 
       results.push({ userId, savedStocks: Object.keys(userAIData).length });
@@ -108,6 +114,8 @@ const validatepredictStocks = async (req, res) => {
     return res.status(500).json({ error: "Prediction failed", details: error.message });
   }
 };
+
+module.exports = { validatepredictStocks };
 
 const getLatestPrediction = async (req, res) => {
   try {
