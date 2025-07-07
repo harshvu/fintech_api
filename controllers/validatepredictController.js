@@ -7,7 +7,6 @@ const validatepredictStocks = async (req, res) => {
   try {
     const io = req.app.get("io");
 
-    // Step 1: Fetch all user portfolios
     const userStocks = await UserStockPortfolio.aggregate([
       {
         $group: {
@@ -17,10 +16,9 @@ const validatepredictStocks = async (req, res) => {
       }
     ]);
 
-    // Step 2: Prepare global stock list and user mapping
     const globalStockSet = new Set();
     const userMap = userStocks.map(({ _id, stocks }) => {
-      const sanitized = stocks.map(s => s.toUpperCase()); // Keep .NS or .BO
+      const sanitized = stocks.map(s => s.trim().toUpperCase()); // Preserve suffixes like .NS
       sanitized.forEach(stock => globalStockSet.add(stock));
       return { userId: _id, stocks: sanitized };
     });
@@ -29,22 +27,22 @@ const validatepredictStocks = async (req, res) => {
     const today = new Date();
     const formattedDate = today.toISOString().split("T")[0];
 
-    // Step 3: Call AI model
     const payload = {
       stock_name: uniqueStockList,
       date: formattedDate
     };
 
     const aiResponse = await sendToAIPredictModel(payload);
+
     console.log("📦 Raw AI Response:");
     console.dir(aiResponse, { depth: null });
 
     const rawResults = aiResponse.results || {};
 
-    // Do NOT strip .NS — keys should match user stocks
+    // ✅ Normalize AI keys to UPPERCASE
     const aiResultMap = {};
     for (const key in rawResults) {
-      aiResultMap[key.toUpperCase()] = rawResults[key]; // Normalize to uppercase
+      aiResultMap[key.trim().toUpperCase()] = rawResults[key];
     }
 
     const results = [];
@@ -53,21 +51,22 @@ const validatepredictStocks = async (req, res) => {
       const userAIData = {};
       const summary = {};
 
-      console.log(`👤 Processing user: ${userId}, Stocks: ${stocks}`);
+      console.log(`👤 Processing user: ${userId}, Stocks: ${stocks.join(",")}`);
 
       for (const stock of stocks) {
-        const data = aiResultMap[stock]; // Now matches with .NS suffix
+        const normalizedStock = stock.trim().toUpperCase();
+        const data = aiResultMap[normalizedStock];
 
         if (!data) {
-          console.log(`⚠️ No AI data found for stock: ${stock}`);
+          console.log(`⚠️ No AI data found for stock: ${normalizedStock}`);
           continue;
         }
 
-        console.log(`✅ AI data for ${stock}:`, data);
+        console.log(`✅ AI data for ${normalizedStock}:`, data);
 
-        userAIData[stock] = data;
+        userAIData[normalizedStock] = data;
 
-        summary[stock] = {
+        summary[normalizedStock] = {
           stock_symbol: data.stock_symbol,
           overall_accuracy_score: (data.overall_accuracy_score || 0) * 100,
           predicted_gap: data.predicted_gap,
