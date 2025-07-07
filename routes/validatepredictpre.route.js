@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { validatepredictStocks, getLatestPrediction } = require("../controllers/validatepredictController");
+const { validatepredictStocks } = require("../controllers/validatepredictController");
 const auth = require("../middlewares/auth.middleware");
 /**
  * @swagger
