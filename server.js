@@ -19,7 +19,7 @@ process.on('unhandledRejection', (err) => {
 
 // ===== Middleware =====
 app.use(cors({
-  origin: '*', // replace with specific URL in production
+  origin: 'https://nivesense.com', // replace with specific URL in production
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));

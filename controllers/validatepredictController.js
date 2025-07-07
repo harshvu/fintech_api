@@ -31,7 +31,7 @@ const validatepredictStocks = async (req, res) => {
     const formattedDate = today.toISOString().split('T')[0];
     // Step 3: Send to AI once
     const payload = {
-      stocks: uniqueStockList,
+      stock_name: uniqueStockList,
       date:formattedDate
     };
 
