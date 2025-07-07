@@ -70,7 +70,7 @@ const validatepredictStocks = async (req, res) => {
         userId,
         date: formattedDate,
         aiResponse: userAIData,
-        summary: summaryMap
+       summary: Object.values(summaryMap)
       });
 
       results.push({ userId, savedStocks: Object.keys(userAIData).length });
