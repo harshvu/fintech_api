@@ -1,12 +1,14 @@
+// ✅ validate.controller.js (full corrected code)
+
 const jwt = require('jsonwebtoken');
 const UserStockPortfolio = require("../models/stockPortfolio.model");
 const validatePredictedStock = require("../models/validatepredictedStock");
 const { sendToAIPredictModel } = require("../services/aiServicePredictvalidatepre");
 
+// ✅ Prediction and Saving Controller
 const validatepredictStocks = async (req, res) => {
   try {
     const io = req.app.get("io");
-
     const userStocks = await UserStockPortfolio.aggregate([
       {
         $group: {
@@ -24,49 +26,30 @@ const validatepredictStocks = async (req, res) => {
     });
 
     const uniqueStockList = Array.from(globalStockSet).sort();
-    const today = new Date();
-    const formattedDate = today.toISOString().split("T")[0];
+    const formattedDate = new Date().toISOString().split("T")[0];
 
-    const payload = {
-      stock_name: uniqueStockList,
-      date: formattedDate
-    };
-
+    const payload = { stock_name: uniqueStockList, date: formattedDate };
     const aiResponse = await sendToAIPredictModel(payload);
-
-    console.log("📦 Raw AI Response:");
-    console.dir(aiResponse, { depth: null });
-
     const rawResults = aiResponse.results || aiResponse || {};
+
     const aiResultMap = {};
     for (const key in rawResults) {
       aiResultMap[key.trim().toUpperCase()] = rawResults[key];
     }
 
     const results = [];
-
     for (const { userId, stocks } of userMap) {
       const userAIData = {};
       const summaryMap = {};
 
-      console.log(`\n👤 Processing user: ${userId}, Stocks: ${stocks.join(",")}`);
-
       for (const stock of stocks) {
-        const normalizedStock = stock.trim().toUpperCase();
-        console.log(`🔍 Looking for stock: ${normalizedStock}`);
+        const normalizedStock = stock.toUpperCase();
         const data = aiResultMap[normalizedStock];
-
-        if (!data) {
-          console.log(`⚠️ No AI data found for stock: ${normalizedStock}`);
-          continue;
-        }
-
-        console.log(`✅ Found AI data for stock: ${normalizedStock}`);
+        if (!data) continue;
 
         userAIData[normalizedStock] = data;
 
         summaryMap[normalizedStock] = {
-          stock: normalizedStock,
           recordCount: 1,
           averageAccuracy: (data.overall_accuracy_score || 0) * 100,
           avgPredictedGap: data.predicted_gap,
@@ -81,36 +64,26 @@ const validatepredictStocks = async (req, res) => {
         };
       }
 
-      if (Object.keys(userAIData).length === 0) {
-        console.log(`❌ Skipping save — no valid AI data for user: ${userId}`);
-        continue;
-      }
-
-      console.log(`💾 Saving to DB for user: ${userId}`);
+      if (Object.keys(userAIData).length === 0) continue;
 
       await validatePredictedStock.create({
         userId,
         date: formattedDate,
         aiResponse: userAIData,
-        summary: Object.values(summaryMap) // ✅ FIXED — convert object to array
+        summary: summaryMap
       });
 
       results.push({ userId, savedStocks: Object.keys(userAIData).length });
     }
 
-    return res.json({
-      message: "✅ AI results saved with summary in single table",
-      results
-    });
-
+    return res.json({ message: "✅ AI results saved with summary", results });
   } catch (error) {
     console.error("❌ Prediction error:", error);
     return res.status(500).json({ error: "Prediction failed", details: error.message });
   }
 };
 
-// ------------------ GET SUMMARY API ------------------
-
+// ✅ Get Summary API
 const getSummaryByUser = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -119,38 +92,26 @@ const getSummaryByUser = async (req, res) => {
     const token = authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.id || decoded._id;
-
     if (!userId) return res.status(401).json({ error: "Invalid token" });
 
     const today = new Date().toISOString().split("T")[0];
     const userRecords = await validatePredictedStock.find({ userId });
-
-    if (!userRecords.length) {
-      return res.status(404).json({ message: "No data found for this user." });
-    }
+    if (!userRecords.length) return res.status(404).json({ message: "No data found for this user." });
 
     const stockMap = {};
-
     for (const record of userRecords) {
       const isToday = record.date === today;
-      const summary = record.summary || [];
+      const summary = record.summary || {};
 
-      for (const data of summary) {
-        const stockSymbol = data.stock;
-        if (!stockMap[stockSymbol]) {
-          stockMap[stockSymbol] = {
-            overall: [],
-            today: null
-          };
-        }
-
+      for (const stockSymbol in summary) {
+        const data = summary[stockSymbol];
+        if (!stockMap[stockSymbol]) stockMap[stockSymbol] = { overall: [], today: null };
         stockMap[stockSymbol].overall.push(data);
         if (isToday) stockMap[stockSymbol].today = data;
       }
     }
 
     const response = {};
-
     for (const stock in stockMap) {
       const entries = stockMap[stock].overall;
       const todayData = stockMap[stock].today;
@@ -180,14 +141,11 @@ const getSummaryByUser = async (req, res) => {
     }
 
     return res.status(200).json(response);
-
   } catch (err) {
     console.error("❌ Error in summary API:", err);
     return res.status(500).json({ error: "Internal server error", details: err.message });
   }
 };
-
-// ------------------ HELPER FUNCTIONS ------------------
 
 function average(arr) {
   if (!arr.length) return 0;
@@ -201,7 +159,4 @@ function percentage(arr) {
   return parseFloat(((trueCount / arr.length) * 100).toFixed(2));
 }
 
-module.exports = {
-  validatepredictStocks,
-  getSummaryByUser
-};
+module.exports = { validatepredictStocks, getSummaryByUser };
