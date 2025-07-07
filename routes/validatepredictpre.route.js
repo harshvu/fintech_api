@@ -25,7 +25,7 @@ router.post("/", validatepredictStocks);
 
 /**
  * @swagger
- * /api/validatepredictpre/latest:
+ * /api/validatepredictpre/validate_summary:
  *   get:
  *     summary: Get latest validation AI prediction per user
  *     tags: [AI validation Prediction For Pre Market Stocks]
