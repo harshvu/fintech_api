@@ -17,17 +17,20 @@ const validatepredictStocks = async (req, res) => {
       }
     ]);
 
-    // Step 2: Prepare global stock list and user mapping
+    // Step 2: Prepare stock list and normalize with .NS suffix
     const globalStockSet = new Set();
     const userMap = userStocks.map(({ _id, stocks }) => {
-      const sanitized = stocks.map(s => s.trim().toUpperCase()); // Keep suffix like .NS
-      sanitized.forEach(stock => globalStockSet.add(stock));
-      return { userId: _id, stocks: sanitized };
+      const normalizedStocks = stocks.map(s => {
+        let clean = s.trim().toUpperCase();
+        if (!clean.endsWith('.NS')) clean += '.NS';
+        globalStockSet.add(clean);
+        return clean;
+      });
+      return { userId: _id, stocks: normalizedStocks };
     });
 
     const uniqueStockList = Array.from(globalStockSet).sort();
-    const today = new Date();
-    const formattedDate = today.toISOString().split("T")[0];
+    const formattedDate = new Date().toISOString().split("T")[0];
 
     // Step 3: Call AI model
     const payload = {
@@ -36,13 +39,12 @@ const validatepredictStocks = async (req, res) => {
     };
 
     const aiResponse = await sendToAIPredictModel(payload);
-
     console.log("📦 Raw AI Response:");
     console.dir(aiResponse, { depth: null });
 
     const rawResults = aiResponse.results || {};
 
-    // Normalize AI response keys to uppercase
+    // Normalize AI response keys
     const aiResultMap = {};
     for (const key in rawResults) {
       aiResultMap[key.trim().toUpperCase()] = rawResults[key];
@@ -57,20 +59,17 @@ const validatepredictStocks = async (req, res) => {
       console.log(`👤 Processing user: ${userId}, Stocks: ${stocks.join(",")}`);
 
       for (const stock of stocks) {
-        const normalizedStock = stock.trim().toUpperCase();
-        const data = aiResultMap[normalizedStock];
+        const data = aiResultMap[stock.trim().toUpperCase()];
 
         if (!data) {
-          console.log(`⚠️ No AI data found for stock: ${normalizedStock}`);
+          console.log(`⚠️ No AI data found for stock: ${stock}`);
           continue;
         }
 
-        console.log(`✅ AI data for ${normalizedStock}:`, data);
-
-        userAIData[normalizedStock] = data;
+        userAIData[stock] = data;
 
         summaryArray.push({
-          stock: normalizedStock,
+          stock,
           recordCount: 1,
           averageAccuracy: (data.overall_accuracy_score || 0) * 100,
           avgPredictedGap: data.predicted_gap,
@@ -88,8 +87,6 @@ const validatepredictStocks = async (req, res) => {
       }
 
       console.log(`💾 Saving to DB for user: ${userId}`);
-      console.log("🧾 Summary:", summaryArray);
-
       await validatePredictedStock.create({
         userId,
         date: formattedDate,
@@ -113,30 +110,21 @@ const validatepredictStocks = async (req, res) => {
 
 const getLatestPrediction = async (req, res) => {
   try {
-        const authHeader = req.headers.authorization;
-      
-          if (!authHeader) {
-            return res.status(401).json({ error: 'Authorization token missing' });
-          }
-      
-          // Extract token (whether it's with or without "Bearer")
-          let token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
-      
-          // Decode token
-          const decoded = jwt.verify(token, process.env.JWT_SECRET);
-          const userId = decoded.id || decoded._id;
-          console.log("this is user"+userId);
-          if (!userId) {
-            return res.status(401).json({ error: 'Invalid token: user ID missing' });
-          }
-       // 🔐 Extracted from JWT token by middleware
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: 'Authorization token missing' });
 
-       const latestPrediction = await PredictedStock
-       .findOne({ userId })
-       .sort({ createdAt: -1 })
-       .select('aiResponse -_id'); 
-      
-    // console.log("MongoDB explain output:", JSON.stringify(latestPrediction, null, 2));
+    const token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id || decoded._id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Invalid token: user ID missing' });
+    }
+
+    const latestPrediction = await validatePredictedStock
+      .findOne({ userId })
+      .sort({ createdAt: -1 })
+      .select('aiResponse summary date -_id');
 
     if (!latestPrediction) {
       return res.status(404).json({ message: "No prediction found for this user." });
@@ -153,4 +141,7 @@ const getLatestPrediction = async (req, res) => {
   }
 };
 
-module.exports = { validatepredictStocks,getLatestPrediction };
+module.exports = {
+  validatepredictStocks,
+  getLatestPrediction
+};
