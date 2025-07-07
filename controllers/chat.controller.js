@@ -44,7 +44,7 @@ exports.getChatHistory = async (req, res) => {
   try {
     const chats = await UserChat.aggregate([
       { $match: { userId } },
-      { $sort: { createdAt: 1 } },
+      { $sort: { createdAt: -1 } },
       {
         $group: {
           _id: "$chatId",
