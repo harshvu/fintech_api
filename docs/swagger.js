@@ -9,7 +9,7 @@ const options = {
       version: '1.0.0',
       description: 'Docs'
     },
-    servers: [{ url: 'http://147.93.27.17:5000' }],
+    servers: [{ url: 'http://147.93.27.17:5000'},{ url: 'https://nivesense.com/api'}],
     components: {
       securitySchemes: {
         bearerAuth: {
