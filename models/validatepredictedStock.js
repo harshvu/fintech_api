@@ -1,3 +1,4 @@
+// models/validatePredictedStock.js
 const mongoose = require("mongoose");
 
 const summaryItemSchema = new mongoose.Schema({
@@ -8,20 +9,19 @@ const summaryItemSchema = new mongoose.Schema({
   openingRangeAccuracyRate: { type: Number, default: 0 },
   supportLevelAccuracyRate: { type: Number, default: 0 },
   resistanceLevelAccuracyRate: { type: Number, default: 0 },
-  predicted_range_lower: { type: Number },
-  predicted_range_upper: { type: Number },
-  actual_opening: { type: Number },
+  predicted_range_lower: Number,
+  predicted_range_upper: Number,
+  actual_opening: Number,
   lastUpdated: { type: Date, default: Date.now }
 }, { _id: false });
 
 const validatePredictedStockSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  date: { type: String, required: true },
+  date: { type: String, required: true }, // YYYY-MM-DD
   aiResponse: mongoose.Schema.Types.Mixed,
   summary: {
     type: Map,
-    of: summaryItemSchema,
-    required: true
+    of: summaryItemSchema
   }
 }, { timestamps: true });
 

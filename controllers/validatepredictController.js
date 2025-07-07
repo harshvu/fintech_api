@@ -9,7 +9,6 @@ const validatepredictStocks = async (req, res) => {
   try {
     const io = req.app.get("io");
 
-    // 1. Fetch user portfolios
     const userStocks = await UserStockPortfolio.aggregate([
       {
         $group: {
@@ -21,19 +20,23 @@ const validatepredictStocks = async (req, res) => {
 
     const globalStockSet = new Set();
     const userMap = userStocks.map(({ _id, stocks }) => {
-      const normalized = stocks.map(s => s.trim().toUpperCase());
-      normalized.forEach(stock => globalStockSet.add(stock));
-      return { userId: _id, stocks: normalized };
+      const sanitized = stocks.map(s => s.trim().toUpperCase());
+      sanitized.forEach(stock => globalStockSet.add(stock));
+      return { userId: _id, stocks: sanitized };
     });
 
-    const uniqueStockList = Array.from(globalStockSet).sort();
+    const uniqueStockList = Array.from(globalStockSet);
     const formattedDate = new Date().toISOString().split("T")[0];
 
-    // 2. Hit AI API
-    const payload = { stock_name: uniqueStockList, date: formattedDate };
+    const payload = {
+      stock_name: uniqueStockList,
+      date: formattedDate
+    };
+
     const aiResponse = await sendToAIPredictModel(payload);
     const rawResults = aiResponse.results || aiResponse || {};
 
+    // Normalize keys to uppercase
     const aiResultMap = {};
     for (const key in rawResults) {
       aiResultMap[key.trim().toUpperCase()] = rawResults[key];
@@ -43,16 +46,16 @@ const validatepredictStocks = async (req, res) => {
 
     for (const { userId, stocks } of userMap) {
       const userAIData = {};
-      const summaryMap = {};
+      const summaryMap = {}; // plain object, not Map()
 
       for (const stock of stocks) {
-        const symbol = stock.trim().toUpperCase();
-        const data = aiResultMap[symbol];
+        const normalizedStock = stock.toUpperCase();
+        const data = aiResultMap[normalizedStock];
         if (!data) continue;
 
-        userAIData[symbol] = data;
+        userAIData[normalizedStock] = data;
 
-        summaryMap[symbol] = {
+        summaryMap[normalizedStock] = {
           recordCount: 1,
           averageAccuracy: (data.overall_accuracy_score || 0) * 100,
           avgPredictedGap: data.predicted_gap,
@@ -73,23 +76,19 @@ const validatepredictStocks = async (req, res) => {
         userId,
         date: formattedDate,
         aiResponse: userAIData,
-        summary: summaryMap  // NOT new Map()
+        summary: summaryMap // ✅ plain object with keys like "HDFCBANK.NS"
       });
 
       results.push({ userId, savedStocks: Object.keys(userAIData).length });
     }
 
-    return res.json({
-      message: "✅ AI results saved with summary using stock keys",
-      results
-    });
+    return res.json({ message: "✅ AI results saved with summary using stock keys", results });
 
   } catch (error) {
     console.error("❌ Prediction error:", error);
     return res.status(500).json({ error: "Prediction failed", details: error.message });
   }
 };
-
 // ✅ Controller: Get Summary Data by User
 const getSummaryByUser = async (req, res) => {
   try {
