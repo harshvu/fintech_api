@@ -9,6 +9,7 @@ const validatepredictStocks = async (req, res) => {
   try {
     const io = req.app.get("io");
 
+    // 1. Fetch user portfolios
     const userStocks = await UserStockPortfolio.aggregate([
       {
         $group: {
@@ -20,14 +21,15 @@ const validatepredictStocks = async (req, res) => {
 
     const globalStockSet = new Set();
     const userMap = userStocks.map(({ _id, stocks }) => {
-      const sanitized = stocks.map(s => s.trim().toUpperCase());
-      sanitized.forEach(stock => globalStockSet.add(stock));
-      return { userId: _id, stocks: sanitized };
+      const normalized = stocks.map(s => s.trim().toUpperCase());
+      normalized.forEach(stock => globalStockSet.add(stock));
+      return { userId: _id, stocks: normalized };
     });
 
     const uniqueStockList = Array.from(globalStockSet).sort();
     const formattedDate = new Date().toISOString().split("T")[0];
 
+    // 2. Hit AI API
     const payload = { stock_name: uniqueStockList, date: formattedDate };
     const aiResponse = await sendToAIPredictModel(payload);
     const rawResults = aiResponse.results || aiResponse || {};
@@ -41,17 +43,17 @@ const validatepredictStocks = async (req, res) => {
 
     for (const { userId, stocks } of userMap) {
       const userAIData = {};
-      const summaryArray = [];
+      const summaryMap = {};
 
       for (const stock of stocks) {
-        const normalizedStock = stock.toUpperCase();
-        const data = aiResultMap[normalizedStock];
+        const symbol = stock.trim().toUpperCase();
+        const data = aiResultMap[symbol];
+
         if (!data) continue;
 
-        userAIData[normalizedStock] = data;
+        userAIData[symbol] = data;
 
-        summaryArray.push({
-          stock: normalizedStock,
+        summaryMap[symbol] = {
           recordCount: 1,
           averageAccuracy: (data.overall_accuracy_score || 0) * 100,
           avgPredictedGap: data.predicted_gap,
@@ -63,22 +65,27 @@ const validatepredictStocks = async (req, res) => {
           predicted_range_upper: data.predicted_range_upper,
           actual_opening: data.actual_opening,
           lastUpdated: new Date()
-        });
+        };
       }
 
       if (Object.keys(userAIData).length === 0) continue;
 
+      // 3. Save with summary as Map
       await validatePredictedStock.create({
         userId,
         date: formattedDate,
         aiResponse: userAIData,
-        summary: summaryArray
+        summary: summaryMap
       });
 
       results.push({ userId, savedStocks: Object.keys(userAIData).length });
     }
 
-    return res.json({ message: "✅ AI results saved with summary", results });
+    return res.json({
+      message: "✅ AI results saved with summary using stock keys",
+      results
+    });
+
   } catch (error) {
     console.error("❌ Prediction error:", error);
     return res.status(500).json({ error: "Prediction failed", details: error.message });
