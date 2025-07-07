@@ -3,10 +3,6 @@ const UserStockPortfolio = require("../models/stockPortfolio.model");
 const validatePredictedStock = require("../models/validatepredictedStock");
 const { sendToAIPredictModel } = require("../services/aiServicePredictvalidatepre");
 
-const validatePredictedStock = require("../models/validatepredictedStock");
-const UserStockPortfolio = require("../models/stockPortfolio.model");
-const { sendToAIPredictModel } = require("../services/aiServicePredictvalidatepre");
-
 const validatepredictStocks = async (req, res) => {
   try {
     const io = req.app.get("io");
@@ -114,8 +110,6 @@ const validatepredictStocks = async (req, res) => {
     return res.status(500).json({ error: "Prediction failed", details: error.message });
   }
 };
-
-module.exports = { validatepredictStocks };
 
 const getLatestPrediction = async (req, res) => {
   try {
