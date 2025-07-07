@@ -48,7 +48,6 @@ const validatepredictStocks = async (req, res) => {
       for (const stock of stocks) {
         const symbol = stock.trim().toUpperCase();
         const data = aiResultMap[symbol];
-
         if (!data) continue;
 
         userAIData[symbol] = data;
@@ -70,12 +69,11 @@ const validatepredictStocks = async (req, res) => {
 
       if (Object.keys(userAIData).length === 0) continue;
 
-      // 3. Save with summary as Map
       await validatePredictedStock.create({
         userId,
         date: formattedDate,
         aiResponse: userAIData,
-        summary: summaryMap
+        summary: new Map(Object.entries(summaryMap)) // ✅ convert to Map
       });
 
       results.push({ userId, savedStocks: Object.keys(userAIData).length });
