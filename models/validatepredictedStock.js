@@ -19,10 +19,7 @@ const validatePredictedStockSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   date: { type: String, required: true }, // YYYY-MM-DD
   aiResponse: mongoose.Schema.Types.Mixed,
-  summary: {
-    type: Map,
-    of: summaryItemSchema
-  }
+  summary: { type: mongoose.Schema.Types.Mixed } // ✅ changed from Map to Mixed
 }, {
   timestamps: true
 });
