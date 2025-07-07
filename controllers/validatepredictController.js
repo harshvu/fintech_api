@@ -7,6 +7,7 @@ const validatepredictStocks = async (req, res) => {
   try {
     const io = req.app.get("io");
 
+    // Step 1: Fetch all user portfolios
     const userStocks = await UserStockPortfolio.aggregate([
       {
         $group: {
@@ -16,9 +17,10 @@ const validatepredictStocks = async (req, res) => {
       }
     ]);
 
+    // Step 2: Prepare global stock list and user mapping
     const globalStockSet = new Set();
     const userMap = userStocks.map(({ _id, stocks }) => {
-      const sanitized = stocks.map(s => s.replace(/\.BO$/, '').toUpperCase());
+      const sanitized = stocks.map(s => s.toUpperCase()); // Keep .NS or .BO
       sanitized.forEach(stock => globalStockSet.add(stock));
       return { userId: _id, stocks: sanitized };
     });
@@ -27,22 +29,22 @@ const validatepredictStocks = async (req, res) => {
     const today = new Date();
     const formattedDate = today.toISOString().split("T")[0];
 
+    // Step 3: Call AI model
     const payload = {
       stock_name: uniqueStockList,
       date: formattedDate
     };
 
     const aiResponse = await sendToAIPredictModel(payload);
-
     console.log("📦 Raw AI Response:");
-    console.dir(aiResponse, { depth: null }); // deep console.log
+    console.dir(aiResponse, { depth: null });
 
     const rawResults = aiResponse.results || {};
-    const aiResultMap = {};
 
+    // Do NOT strip .NS — keys should match user stocks
+    const aiResultMap = {};
     for (const key in rawResults) {
-      const normalizedKey = key.replace(/\.NS$/, '').toUpperCase();
-      aiResultMap[normalizedKey] = rawResults[key];
+      aiResultMap[key.toUpperCase()] = rawResults[key]; // Normalize to uppercase
     }
 
     const results = [];
@@ -54,7 +56,7 @@ const validatepredictStocks = async (req, res) => {
       console.log(`👤 Processing user: ${userId}, Stocks: ${stocks}`);
 
       for (const stock of stocks) {
-        const data = aiResultMap[stock];
+        const data = aiResultMap[stock]; // Now matches with .NS suffix
 
         if (!data) {
           console.log(`⚠️ No AI data found for stock: ${stock}`);
