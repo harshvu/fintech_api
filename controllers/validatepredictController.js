@@ -7,7 +7,7 @@ const validatepredictStocks = async (req, res) => {
   try {
     const io = req.app.get("io");
 
-    // Step 1: Fetch all user portfolios
+    // 1. Fetch all user portfolios
     const userStocks = await UserStockPortfolio.aggregate([
       {
         $group: {
@@ -17,7 +17,6 @@ const validatepredictStocks = async (req, res) => {
       }
     ]);
 
-    // Step 2: Create global unique stock list
     const globalStockSet = new Set();
 
     const userMap = userStocks.map(({ _id, stocks }) => {
@@ -28,66 +27,70 @@ const validatepredictStocks = async (req, res) => {
 
     const uniqueStockList = Array.from(globalStockSet).sort();
     const today = new Date();
-    const formattedDate = today.toISOString().split('T')[0];
-    // Step 3: Send to AI once
+    const formattedDate = today.toISOString().split("T")[0];
+
+    // 2. Send to AI once
     const payload = {
       stock_name: uniqueStockList,
-      date:formattedDate
+      date: formattedDate
     };
 
     const aiResponse = await sendToAIPredictModel(payload);
-
-    // ✅ FIX: Use aiResponse.results
     const rawResults = aiResponse.results || {};
 
-    // Step 4: Create ticker-to-data map
-    const tickerToDataMap = {};
-    for (const ticker in rawResults) {
-      const entry = rawResults[ticker];
-
-      // Only store if it has valid 'result'
-      if (entry && entry.result && Object.keys(entry.result).length > 0) {
-        const cleanTicker = ticker.toUpperCase();
-        tickerToDataMap[cleanTicker] = entry;
-      }
-    }
-
-    // Step 5: Store and emit per user
+    // 3. Save raw JSON + update stats
     const results = [];
 
     for (const { userId, stocks } of userMap) {
-      const filteredResponse = {};
+      const userAIData = {};
 
       for (const stock of stocks) {
-        if (tickerToDataMap[stock]) {
-          filteredResponse[stock] = tickerToDataMap[stock];
+        const data = rawResults[stock];
+        if (data && typeof data === "object") {
+          userAIData[stock] = data;
+
+          // Update per-stock aggregate stats
+          await validatedStockStats.updateOne(
+            { userId, stock },
+            {
+              $inc: {
+                recordCount: 1,
+                totalAccuracy: (data.overall_accuracy_score || 0) * 100,
+                trueOpeningRange: data.opening_range_accuracy ? 1 : 0,
+                trueSupportLevel: data.support_level_accuracy ? 1 : 0,
+                trueResistanceLevel: data.resistance_level_accuracy ? 1 : 0
+              },
+              $set: {
+                lastPredictedGap: data.predicted_gap,
+                lastActualGap: data.actual_gap,
+                lastPredictedRangeLower: data.predicted_range_lower,
+                lastPredictedRangeUpper: data.predicted_range_upper,
+                lastActualOpening: data.actual_opening,
+                lastUpdated: new Date()
+              }
+            },
+            { upsert: true }
+          );
         }
       }
 
-      if (Object.keys(filteredResponse).length === 0) {
-        console.log(`No AI response found for user ${userId}, skipping.`);
+      if (Object.keys(userAIData).length === 0) {
+        console.log(`❌ No AI response found for user ${userId}`);
         continue;
       }
 
-      // ✅ Save to DB
+      // ✅ Save full raw JSON response to DB
       await validatePredictedStock.create({
         userId,
-        stockNames: stocks,
-        aiResponse: filteredResponse
+        date: formattedDate,
+        aiResponse: userAIData
       });
 
-      // // ✅ Emit to socket
-      // io.emit("prediction_complete", {
-      //   userId,
-      //   message: `✅ AI prediction complete for user ${userId}`,
-      //   aiResponse: filteredResponse
-      // });
-
-      results.push({ userId, status: "saved" });
+      results.push({ userId, savedStocks: Object.keys(userAIData).length });
     }
 
     return res.json({
-      message: "✅ AI called once, user responses saved",
+      message: "✅ AI results saved and stats updated",
       results
     });
 
@@ -96,6 +99,7 @@ const validatepredictStocks = async (req, res) => {
     return res.status(500).json({ error: "Prediction failed", details: error.message });
   }
 };
+
 
 
 const getLatestPrediction = async (req, res) => {
