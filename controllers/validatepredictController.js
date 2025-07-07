@@ -19,6 +19,7 @@ const validatepredictStocks = async (req, res) => {
 
     const globalStockSet = new Set();
 
+    // 2. Clean stock list and prepare user mapping
     const userMap = userStocks.map(({ _id, stocks }) => {
       const sanitized = stocks.map(s => s.replace(/\.BO$/, '').toUpperCase());
       sanitized.forEach(stock => globalStockSet.add(stock));
@@ -29,7 +30,7 @@ const validatepredictStocks = async (req, res) => {
     const today = new Date();
     const formattedDate = today.toISOString().split("T")[0];
 
-    // 2. Send to AI once
+    // 3. Send to AI once
     const payload = {
       stock_name: uniqueStockList,
       date: formattedDate
@@ -38,18 +39,26 @@ const validatepredictStocks = async (req, res) => {
     const aiResponse = await sendToAIPredictModel(payload);
     const rawResults = aiResponse.results || {};
 
-    // 3. Save raw JSON + update stats
+    // 4. Normalize AI response keys for lookup
+    const aiResultMap = {};
+    for (const key in rawResults) {
+      const normalizedKey = key.replace(/\.NS$/, '').toUpperCase();
+      aiResultMap[normalizedKey] = rawResults[key];
+    }
+
     const results = [];
 
+    // 5. Process each user
     for (const { userId, stocks } of userMap) {
       const userAIData = {};
 
       for (const stock of stocks) {
-        const data = rawResults[stock];
+        const data = aiResultMap[stock];
+
         if (data && typeof data === "object") {
           userAIData[stock] = data;
 
-          // Update per-stock aggregate stats
+          // Update aggregate stats
           await validatedStockStats.updateOne(
             { userId, stock },
             {
@@ -74,12 +83,13 @@ const validatepredictStocks = async (req, res) => {
         }
       }
 
+      // Skip if no valid AI data
       if (Object.keys(userAIData).length === 0) {
         console.log(`❌ No AI response found for user ${userId}`);
         continue;
       }
 
-      // ✅ Save full raw JSON response to DB
+      // ✅ Save daily raw response
       await validatePredictedStock.create({
         userId,
         date: formattedDate,
@@ -99,7 +109,6 @@ const validatepredictStocks = async (req, res) => {
     return res.status(500).json({ error: "Prediction failed", details: error.message });
   }
 };
-
 
 
 const getLatestPrediction = async (req, res) => {
