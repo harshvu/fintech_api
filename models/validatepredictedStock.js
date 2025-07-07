@@ -17,12 +17,14 @@ const summaryItemSchema = new mongoose.Schema({
 
 const validatePredictedStockSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  date: { type: String, required: true }, // YYYY-MM-DD
+  date: { type: String, required: true }, // format: YYYY-MM-DD
   aiResponse: mongoose.Schema.Types.Mixed,
   summary: {
     type: Map,
     of: summaryItemSchema
   }
-}, { timestamps: true });
+}, {
+  timestamps: true
+});
 
 module.exports = mongoose.model("validatePredictedStock", validatePredictedStockSchema);
