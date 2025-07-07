@@ -7,7 +7,6 @@ const validatepredictStocks = async (req, res) => {
   try {
     const io = req.app.get("io");
 
-    // Step 1: Fetch all user portfolios
     const userStocks = await UserStockPortfolio.aggregate([
       {
         $group: {
@@ -17,7 +16,6 @@ const validatepredictStocks = async (req, res) => {
       }
     ]);
 
-    // Step 2: Prepare global stock list and user mapping
     const globalStockSet = new Set();
     const userMap = userStocks.map(({ _id, stocks }) => {
       const sanitized = stocks.map(s => s.replace(/\.BO$/, '').toUpperCase());
@@ -29,7 +27,6 @@ const validatepredictStocks = async (req, res) => {
     const today = new Date();
     const formattedDate = today.toISOString().split("T")[0];
 
-    // Step 3: Call AI model
     const payload = {
       stock_name: uniqueStockList,
       date: formattedDate
@@ -37,48 +34,39 @@ const validatepredictStocks = async (req, res) => {
 
     const aiResponse = await sendToAIPredictModel(payload);
     const rawResults = aiResponse.results || {};
+    console.log("✅ AI Response Received"+rawResults);
 
-    // Normalize keys for lookup (HDFCBANK.NS → HDFCBANK)
     const aiResultMap = {};
     for (const key in rawResults) {
       const normalizedKey = key.replace(/\.NS$/, '').toUpperCase();
       aiResultMap[normalizedKey] = rawResults[key];
     }
 
-    // Step 4: Process and store per user
     const results = [];
 
     for (const { userId, stocks } of userMap) {
       const userAIData = {};
+      const summary = {};
 
       for (const stock of stocks) {
         const data = aiResultMap[stock];
-        if (data && typeof data === "object") {
-          userAIData[stock] = data;
+        if (!data) continue;
 
-          // Save to aggregate stats collection
-          await validatedStockStats.updateOne(
-            { userId, stock },
-            {
-              $inc: {
-                recordCount: 1,
-                totalAccuracy: (data.overall_accuracy_score || 0) * 100,
-                trueOpeningRange: data.opening_range_accuracy ? 1 : 0,
-                trueSupportLevel: data.support_level_accuracy ? 1 : 0,
-                trueResistanceLevel: data.resistance_level_accuracy ? 1 : 0
-              },
-              $set: {
-                lastPredictedGap: data.predicted_gap,
-                lastActualGap: data.actual_gap,
-                lastPredictedRangeLower: data.predicted_range_lower,
-                lastPredictedRangeUpper: data.predicted_range_upper,
-                lastActualOpening: data.actual_opening,
-                lastUpdated: new Date()
-              }
-            },
-            { upsert: true }
-          );
-        }
+        userAIData[stock] = data;
+
+        // Compute summary fields
+        summary[stock] = {
+          stock_symbol: data.stock_symbol,
+          overall_accuracy_score: data.overall_accuracy_score * 100,
+          predicted_gap: data.predicted_gap,
+          actual_gap: data.actual_gap,
+          opening_range_accuracy: data.opening_range_accuracy ? 1 : 0,
+          predicted_range_lower: data.predicted_range_lower,
+          predicted_range_upper: data.predicted_range_upper,
+          actual_opening: data.actual_opening,
+          support_level_accuracy: data.support_level_accuracy ? 1 : 0,
+          resistance_level_accuracy: data.resistance_level_accuracy ? 1 : 0
+        };
       }
 
       if (Object.keys(userAIData).length === 0) {
@@ -86,18 +74,19 @@ const validatepredictStocks = async (req, res) => {
         continue;
       }
 
-      // Save full JSON response for the day
+      // Save only to validatePredictedStock (single table)
       await validatePredictedStock.create({
         userId,
         date: formattedDate,
-        aiResponse: userAIData
+        aiResponse: userAIData,
+        summary // store summarized accuracy/gap/range info
       });
 
       results.push({ userId, savedStocks: Object.keys(userAIData).length });
     }
 
     return res.json({
-      message: "✅ AI results saved and stats updated",
+      message: "✅ AI results saved with summary in single table",
       results
     });
 
