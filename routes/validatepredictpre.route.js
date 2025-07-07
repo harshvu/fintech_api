@@ -23,20 +23,20 @@ const auth = require("../middlewares/auth.middleware");
  */
 router.post("/", validatepredictStocks);
 
-/**
- * @swagger
- * /api/validatepredictpre/latest:
- *   get:
- *     summary: Get latest validation AI prediction per user
- *     tags: [AI validation Prediction For Pre Market Stocks]
- *     responses:
- *       200:
- *         description: Latest predictions fetched
- *       404:
- *         description: No predictions found
- *       500:
- *         description: Internal error
- */
-router.get("/latest", auth, getLatestPrediction);
+// /**
+//  * @swagger
+//  * /api/validatepredictpre/latest:
+//  *   get:
+//  *     summary: Get latest validation AI prediction per user
+//  *     tags: [AI validation Prediction For Pre Market Stocks]
+//  *     responses:
+//  *       200:
+//  *         description: Latest predictions fetched
+//  *       404:
+//  *         description: No predictions found
+//  *       500:
+//  *         description: Internal error
+//  */
+// router.get("/latest", auth, getLatestPrediction);
 
 module.exports = router;
