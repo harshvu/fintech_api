@@ -53,7 +53,7 @@ const validatepredictStocks = async (req, res) => {
         if (!data) continue;
 
         userAIData[stock] = data;
-
+        console.log("ai data convert",data)
         // Compute summary fields
         summary[stock] = {
           stock_symbol: data.stock_symbol,
