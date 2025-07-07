@@ -33,10 +33,13 @@ const validatepredictStocks = async (req, res) => {
     };
 
     const aiResponse = await sendToAIPredictModel(payload);
-    const rawResults = aiResponse.results || {};
-    console.log("✅ AI Response Received"+rawResults);
 
+    console.log("📦 Raw AI Response:");
+    console.dir(aiResponse, { depth: null }); // deep console.log
+
+    const rawResults = aiResponse.results || {};
     const aiResultMap = {};
+
     for (const key in rawResults) {
       const normalizedKey = key.replace(/\.NS$/, '').toUpperCase();
       aiResultMap[normalizedKey] = rawResults[key];
@@ -48,16 +51,23 @@ const validatepredictStocks = async (req, res) => {
       const userAIData = {};
       const summary = {};
 
+      console.log(`👤 Processing user: ${userId}, Stocks: ${stocks}`);
+
       for (const stock of stocks) {
         const data = aiResultMap[stock];
-        if (!data) continue;
+
+        if (!data) {
+          console.log(`⚠️ No AI data found for stock: ${stock}`);
+          continue;
+        }
+
+        console.log(`✅ AI data for ${stock}:`, data);
 
         userAIData[stock] = data;
-        console.log("ai data convert",data)
-        // Compute summary fields
+
         summary[stock] = {
           stock_symbol: data.stock_symbol,
-          overall_accuracy_score: data.overall_accuracy_score * 100,
+          overall_accuracy_score: (data.overall_accuracy_score || 0) * 100,
           predicted_gap: data.predicted_gap,
           actual_gap: data.actual_gap,
           opening_range_accuracy: data.opening_range_accuracy ? 1 : 0,
@@ -70,16 +80,18 @@ const validatepredictStocks = async (req, res) => {
       }
 
       if (Object.keys(userAIData).length === 0) {
-        console.log(`❌ No AI response found for user ${userId}`);
+        console.log(`❌ Skipping save — no valid AI data for user: ${userId}`);
         continue;
       }
 
-      // Save only to validatePredictedStock (single table)
+      console.log(`💾 Saving to DB for user: ${userId}`);
+      console.log("🧾 Summary:", summary);
+
       await validatePredictedStock.create({
         userId,
         date: formattedDate,
         aiResponse: userAIData,
-        summary // store summarized accuracy/gap/range info
+        summary
       });
 
       results.push({ userId, savedStocks: Object.keys(userAIData).length });
@@ -91,11 +103,10 @@ const validatepredictStocks = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Prediction error:", error.message);
+    console.error("❌ Prediction error:", error);
     return res.status(500).json({ error: "Prediction failed", details: error.message });
   }
 };
-
 
 const getLatestPrediction = async (req, res) => {
   try {
