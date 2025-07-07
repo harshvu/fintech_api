@@ -21,4 +21,4 @@ const validatepredictedStockSchema = new mongoose.Schema({
   timestamps: true // adds createdAt and updatedAt fields
 });
 
-module.exports = mongoose.model("validatePredictedStockpre", validatepredictedStockSchema);
+module.exports = mongoose.model("validatePredictedStock", validatepredictedStockSchema);
