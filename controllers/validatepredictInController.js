@@ -146,7 +146,7 @@ const validatepredictStocks = async (req, res) => {
       }
 
       if (Object.keys(summaryResponse).length > 0) {
-        io.emit("validation_summary", {
+        io.emit("validation_summary_in", {
           userId,
           message: `✅ AI validate summary pre market complete for user ${userId}`,
           summaryData: summaryResponse
