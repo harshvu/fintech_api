@@ -4,9 +4,22 @@ const UserStockPortfolio = require("../models/stockPortfolio.model");
 const validatePredictedStock = require("../models/validatepredictedStock");
 const { sendToAIPredictModel } = require("../services/aiServicePredictvalidatepre");
 
+function average(arr) {
+  if (!arr.length) return 0;
+  const total = arr.reduce((sum, v) => sum + (parseFloat(v) || 0), 0);
+  return parseFloat((total / arr.length).toFixed(2));
+}
+
+function percentage(arr) {
+  if (!arr.length) return 0;
+  const trueCount = arr.filter(v => v === 1).length;
+  return parseFloat(((trueCount / arr.length) * 100).toFixed(2));
+}
 // ✅ Controller: Save AI Predictions and Summary
 const validatepredictStocks = async (req, res) => {
   try {
+    const io = req.app.get("io");
+
     const userStocks = await UserStockPortfolio.aggregate([
       {
         $group: {
@@ -43,7 +56,7 @@ const validatepredictStocks = async (req, res) => {
 
     for (const { userId, stocks } of userMap) {
       const userAIData = {};
-      const summaryMap = {}; // ✅ plain object only
+      const summaryMap = {};
 
       for (const stock of stocks) {
         const normalizedStock = stock.toUpperCase();
@@ -73,14 +86,78 @@ const validatepredictStocks = async (req, res) => {
         userId,
         date: formattedDate,
         aiResponse: userAIData,
-        summary: summaryMap // ✅ Plain JS object with stock keys
+        summary: summaryMap
+      });
+
+      io.emit("validation_pre_market", {
+        userId,
+        message: `✅ AI validation prediction complete for user ${userId}`,
+        aiResponse: userAIData
+      });
+
+      // 🔁 Fetch all records for the user for summary emit
+      const userRecords = await validatePredictedStock.find({ userId });
+      const stockMap = {};
+
+      for (const record of userRecords) {
+        const isToday = record.date === formattedDate;
+        const summary = record.summary || {};
+
+        for (const stockSymbol in summary) {
+          const data = summary[stockSymbol];
+          if (!stockMap[stockSymbol]) {
+            stockMap[stockSymbol] = {
+              overall: [],
+              today: null
+            };
+          }
+
+          stockMap[stockSymbol].overall.push(data);
+          if (isToday) {
+            stockMap[stockSymbol].today = data;
+          }
+        }
+      }
+
+      const summaryResponse = {};
+      for (const stock in stockMap) {
+        const entries = stockMap[stock].overall;
+        const todayData = stockMap[stock].today;
+
+        const overall_average = {
+          averageAccuracy: average(entries.map(e => e.averageAccuracy)),
+          avgPredictedGap: average(entries.map(e => e.avgPredictedGap)),
+          avgActualGap: average(entries.map(e => e.avgActualGap)),
+          openingRangeAccuracyRate: percentage(entries.map(e => e.openingRangeAccuracyRate)),
+          supportLevelAccuracyRate: percentage(entries.map(e => e.supportLevelAccuracyRate)),
+          resistanceLevelAccuracyRate: percentage(entries.map(e => e.resistanceLevelAccuracyRate))
+        };
+
+        const today_average = todayData ? {
+          averageAccuracy: todayData.averageAccuracy || 0,
+          avgPredictedGap: todayData.avgPredictedGap || 0,
+          avgActualGap: todayData.avgActualGap || 0,
+          openingRangeAccuracyRate: todayData.openingRangeAccuracyRate ? 100 : 0,
+          supportLevelAccuracyRate: todayData.supportLevelAccuracyRate ? 100 : 0,
+          resistanceLevelAccuracyRate: todayData.resistanceLevelAccuracyRate ? 100 : 0
+        } : {};
+
+        summaryResponse[stock] = {
+          Overall_average: overall_average,
+          today_average
+        };
+      }
+
+      io.emit("validation_summary_pre_market", {
+        userId,
+        message: `✅ AI validate summary pre market  complete for user ${userId}`,
+        summaryData: summaryResponse
       });
 
       results.push({ userId, savedStocks: Object.keys(userAIData).length });
     }
 
-    return res.json({ message: "✅ AI results saved with stock-keyed summary", results });
-
+    return res.json({ message: "✅ AI results saved and emitted with summaries", results });
   } catch (error) {
     console.error("❌ Prediction error:", error);
     return res.status(500).json({
@@ -171,18 +248,6 @@ const getSummaryByUser = async (req, res) => {
 };
 
 // Helpers
-function average(arr) {
-  if (!arr.length) return 0;
-  const total = arr.reduce((sum, v) => sum + (parseFloat(v) || 0), 0);
-  return parseFloat((total / arr.length).toFixed(2));
-}
-
-function percentage(arr) {
-  if (!arr.length) return 0;
-  const trueCount = arr.filter(v => v === 1).length;
-  return parseFloat(((trueCount / arr.length) * 100).toFixed(2));
-}
-
 module.exports = {
   validatepredictStocks,
   getSummaryByUser
