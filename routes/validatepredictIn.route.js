@@ -29,7 +29,7 @@ router.post("/", validatepredictStocks);
 
 /**
  * @swagger
- * /api/validatepredictIn/validate_summary:
+ * /api/validatepredictIn/validate_summary_in:
  *   get:
  *     summary: Get latest validation AI prediction per user
  *     tags: [AI validation Prediction For IN Market Stocks]
