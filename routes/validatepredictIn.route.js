@@ -3,22 +3,22 @@ const router = express.Router();
 const {
   validatepredictStocks,
   getSummaryByUser
-} = require("../controllers/validatepredictController");
+} = require("../controllers/validatepredictInController");
 const auth = require("../middlewares/auth.middleware");
 
 /**
  * @swagger
  * tags:
  *   name: AI validation For Pre Market Stocks
- *   description: AI validation Prediction For Pre Market Stocks
+ *   description: AI validation Prediction For IN Market Stocks
  */
 
 /**
  * @swagger
- * /api/validatepredictpre:
+ * /api/validatepredictIn:
  *   post:
  *     summary: Trigger AI prediction per user (no auth)
- *     tags: [AI validation Prediction For Pre Market Stocks]
+ *     tags: [AI validation Prediction For IN Market Stocks]
  *     responses:
  *       200:
  *         description: Prediction success
@@ -29,10 +29,10 @@ router.post("/", validatepredictStocks);
 
 /**
  * @swagger
- * /api/validatepredictpre/validate_summary:
+ * /api/validatepredictIn/validate_summary:
  *   get:
  *     summary: Get latest validation AI prediction per user
- *     tags: [AI validation Prediction For Pre Market Stocks]
+ *     tags: [AI validation Prediction For IN Market Stocks]
  *     responses:
  *       200:
  *         description: Latest predictions fetched
@@ -41,7 +41,7 @@ router.post("/", validatepredictStocks);
  *       500:
  *         description: Internal error
  */
-router.get("/validate_summary", auth, getSummaryByUser);
+router.get("/validate_summary_in", auth, getSummaryByUser);
 
 
 

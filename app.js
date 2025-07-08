@@ -21,6 +21,7 @@ app.use(morgan('dev')); // Log HTTP requests to console
   app.use('/api/search', require('./routes/chat.routes'));
   app.use('/api/feedback', require('./routes/feedback.routes'));
   app.use('/api/validatepredictpre', require('./routes/validatepredictpre.route'));
+  app.use('/api/validatepredictIn', require('./routes/validatepredictIn.route'));
 // Swagger Docs
 const { swaggerUi, swaggerSpec } = require('./docs/swagger');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
