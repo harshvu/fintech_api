@@ -20,6 +20,7 @@ const validatepredictStocks = async (req, res) => {
   try {
     const io = req.app.get("io");
 
+    // Step 1: Group user portfolios
     const userStocks = await UserStockPortfolio.aggregate([
       {
         $group: {
@@ -39,14 +40,17 @@ const validatepredictStocks = async (req, res) => {
     const uniqueStockList = Array.from(globalStockSet);
     const formattedDate = new Date().toISOString().split("T")[0];
 
+    // Step 2: AI API call
     const payload = {
       stock_name: uniqueStockList,
       date: formattedDate
     };
 
+    console.log("🔍 Sending payload to AI model:", payload);
     const aiResponse = await sendToAIPredictModel(payload);
     const rawResults = aiResponse.results || aiResponse || {};
 
+    // Step 3: Normalize AI response
     const aiResultMap = {};
     for (const key in rawResults) {
       aiResultMap[key.trim().toUpperCase()] = rawResults[key];
@@ -61,7 +65,11 @@ const validatepredictStocks = async (req, res) => {
       for (const stock of stocks) {
         const normalizedStock = stock.toUpperCase();
         const data = aiResultMap[normalizedStock];
-        if (!data) continue;
+
+        if (!data) {
+          console.warn(`⚠️ No AI data for stock: ${normalizedStock}`);
+          continue;
+        }
 
         userAIData[normalizedStock] = data;
 
@@ -80,8 +88,12 @@ const validatepredictStocks = async (req, res) => {
         };
       }
 
-      if (Object.keys(userAIData).length === 0) continue;
+      if (Object.keys(userAIData).length === 0) {
+        console.log(`ℹ️ No valid predictions for user ${userId}, skipping save and emit.`);
+        continue;
+      }
 
+      // Step 4: Save to DB
       await validatePredictedStock.create({
         userId,
         date: formattedDate,
@@ -89,13 +101,15 @@ const validatepredictStocks = async (req, res) => {
         summary: summaryMap
       });
 
+      // Step 5: Emit raw prediction result
+      console.log(`📤 Emitting validation_pre_market for user ${userId}`);
       io.emit("validation_pre_market", {
         userId,
         message: `✅ AI validation prediction complete for user ${userId}`,
         aiResponse: userAIData
       });
 
-      // 🔁 Fetch all records for the user for summary emit
+      // Step 6: Fetch all user records for summary emit
       const userRecords = await validatePredictedStock.find({ userId });
       const stockMap = {};
 
@@ -120,6 +134,7 @@ const validatepredictStocks = async (req, res) => {
       }
 
       const summaryResponse = {};
+
       for (const stock in stockMap) {
         const entries = stockMap[stock].overall;
         const todayData = stockMap[stock].today;
@@ -148,16 +163,23 @@ const validatepredictStocks = async (req, res) => {
         };
       }
 
-      io.emit("validation_summary_pre_market", {
-        userId,
-        message: `✅ AI validate summary pre market  complete for user ${userId}`,
-        summaryData: summaryResponse
-      });
+      if (Object.keys(summaryResponse).length > 0) {
+        console.log(`📤 Emitting validation_summary for user ${userId}`);
+        console.log("Summary Payload:", JSON.stringify(summaryResponse, null, 2));
+
+        io.emit("validation_summary", {
+          userId,
+          summaryData: summaryResponse
+        });
+      } else {
+        console.warn(`⚠️ No summary to emit for user ${userId}`);
+      }
 
       results.push({ userId, savedStocks: Object.keys(userAIData).length });
     }
 
     return res.json({ message: "✅ AI results saved and emitted with summaries", results });
+
   } catch (error) {
     console.error("❌ Prediction error:", error);
     return res.status(500).json({
@@ -166,7 +188,6 @@ const validatepredictStocks = async (req, res) => {
     });
   }
 };
-
 // ✅ Controller: Get Summary Data by User
 
 const getSummaryByUser = async (req, res) => {
