@@ -117,23 +117,34 @@ cron.schedule("15 8 * * *", () => {
 });
 
 // predictStocksIn at 9:01 AM
-cron.schedule("1 * * * *", () => {
-
+cron.schedule("1 9-15/2 * * *", () => {
   const now = new Date();
   const hour = now.getHours();
   const minute = now.getMinutes();
 
-  // Check if time is after 15:30
-  if (hour > 15 || (hour === 15 && minute > 30)) {
-    console.log("Skipping cron job after 15:30");
+  // Block if it's past 15:30
+  if (hour === 15 && minute > 30) {
+    console.log("Skipping job: time is past 15:30");
     return;
   }
-  console.log("⏱️ Running cron job: predictStocksIn (every hour at minute 1)");
+
+  console.log("⏱️ Running cron job: predictStocksIn (every 2 hours from 09:01 to 15:30)");
   runPredictStocksIn();
 });
 
-cron.schedule("40 15 * * *", () => {
-  console.log("⏱️ Running cron job: predictStocksIn (9:01 AM)");
+
+cron.schedule("40 10-16/2 * * *", () => {
+  const now = new Date();
+  const hour = now.getHours();
+  const minute = now.getMinutes();
+
+  // Prevent execution if time is after 16:00
+  if (hour === 16 && minute > 0) {
+    console.log("Skipping cron job: after 16:00");
+    return;
+  }
+
+  console.log("⏱️ Running cron job: validatePredictIn (every 2 hours from 10:40 to 16:00)");
   runValidatePredictIn();
 });
 cron.schedule("01 9 * * *", () => {

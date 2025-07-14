@@ -44,24 +44,23 @@ exports.getChatHistory = async (req, res) => {
   try {
     const chats = await UserChat.aggregate([
       { $match: { userId } },
-      { $sort: { createdAt: -1 } },
+      { $sort: { createdAt: 1 } }, // sort oldest to newest to get first question correctly
       {
         $group: {
           _id: "$chatId",
-          first_question: { $last: "$question" },  // 👈 changed here
+          first_question: { $first: "$question" },
           messages: {
             $push: {
               question: "$question",
               answer: "$answer",
               createdAt: "$createdAt"
             }
-          }
+          },
+          lastMessageTime: { $last: "$createdAt" } // used for sorting by activity
         }
-      }
+      },
+      { $sort: { lastMessageTime: -1 } } // 🔁 sort threads by latest activity
     ]);
-
-    // 🔁 Sort chat groups by _id descending (latest chats first)
-    chats.sort((a, b) => b._id.localeCompare(a._id));
 
     const response = {
       sidebar: chats.map(c => ({
@@ -75,7 +74,7 @@ exports.getChatHistory = async (req, res) => {
     return res.json(response);
   } catch (error) {
     console.error("GetChatHistory Error:", error.message);
-    return res.status(500).json({ error: "Failed to fetch chat history" }); 
+    return res.status(500).json({ error: "Failed to fetch chat history" });
   }
 };
 
