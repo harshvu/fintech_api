@@ -48,7 +48,7 @@ exports.getChatHistory = async (req, res) => {
       {
         $group: {
           _id: "$chatId",
-          first_question: { $first: "$question" },
+          first_question: { $last: "$question" },  // 👈 changed here
           messages: {
             $push: {
               question: "$question",
@@ -78,6 +78,7 @@ exports.getChatHistory = async (req, res) => {
     return res.status(500).json({ error: "Failed to fetch chat history" }); 
   }
 };
+
 
 exports.getChatById = async (req, res) => {
   const userId = req.user.id;
