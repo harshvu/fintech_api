@@ -39,21 +39,24 @@ cron.schedule("20 9 * * *", () => {
 }, { timezone: "Asia/Kolkata" });
 
 // 🕘 Intra-Day Prediction — every 5 mins from 9:01 AM to 3:30 PM
-cron.schedule("*/5 9-15 * * *", () => {
-  const now = new Date();
-  const indiaTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+const cron = require("node-cron");
+
+// Run every 10 minutes from 12:20 AM onwards
+cron.schedule("*/10 * * * *", () => {
+  const indiaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
   const hour = indiaTime.getHours();
   const minute = indiaTime.getMinutes();
 
-  // if (hour > 15 || (hour === 15 && minute > 30) || hour >= 18) {
-    if (hour >= 18) {
-    console.log("⛔ Skipping: Intra-Day Prediction (past 3:30 PM or 6:00 PM)");
+  // Start only if current time is >= 12:20 AM IST
+  if (hour === 0 && minute < 20) {
+    console.log("⏭️ Skipping: Before 12:20 AM IST");
     return;
   }
 
   console.log(`⏱️ Running: Intra-Day Prediction at ${indiaTime.toLocaleTimeString("en-IN", { hour12: true })}`);
   runPredictStocksIn();
 }, { timezone: "Asia/Kolkata" });
+
 
 // 🕥 Intra-Day Validation — every 2 hours from 10:40 AM to 4:00 PM
 cron.schedule("40 10-16/2 * * *", () => {
