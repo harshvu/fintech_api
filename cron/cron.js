@@ -127,17 +127,34 @@ cron.schedule("30 8 * * *", () => {
 }, { timezone: "Asia/Kolkata" });
 
 // 🔁 predictStocksIn - Every 2 hours from 09:01 to 15:30
-cron.schedule("1 14-15/1 * * *", () => {
-  const now = new Date();
-  const hour = now.getHours();
-  const minute = now.getMinutes();
+// cron.schedule("1 14-15/1 * * *", () => {
+//   const now = new Date();
+//   const hour = now.getHours();
+//   const minute = now.getMinutes();
 
-  if (hour === 15 && minute > 30) {
-    console.log("⏭️ Skipping predictStocksIn: past 15:30");
+//   if (hour === 15 && minute > 30) {
+//     console.log("⏭️ Skipping predictStocksIn: past 15:30");
+//     return;
+//   }
+
+//   console.log("⏱️ Cron: predictStocksIn (every 2 hours from 1:01 PM to 3:01 PM)");
+//   runPredictStocksIn();
+// }, { timezone: "Asia/Kolkata" });
+
+cron.schedule("*/5 14-15 * * *", () => {
+  const now = new Date();
+
+  const indiaTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  const hour = indiaTime.getHours();
+  const minute = indiaTime.getMinutes();
+
+  // Skip if it's past 15:30 IST
+  if (hour === 18 && minute > 30) {
+    console.log("⏭️ Skipping predictStocksIn: past 3:30 PM IST");
     return;
   }
 
-  console.log("⏱️ Cron: predictStocksIn (every 2 hours from 1:01 PM to 3:01 PM)");
+  console.log("⏱️ Running Cron: predictStocksIn (every 5 mins from 2:00 PM to 3:30 PM IST) at", indiaTime.toLocaleTimeString("en-IN", { hour12: true }));
   runPredictStocksIn();
 }, { timezone: "Asia/Kolkata" });
 
