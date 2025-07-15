@@ -18,8 +18,7 @@ function percentage(arr) {
 // ✅ Controller: Save AI Predictions and Summary
 const validatepredictStocks = async (req, res) => {
   try {
-    const io = req.app.get("io");
-
+    // Step 1: Fetch all user portfolios
     const userStocks = await UserStockPortfolio.aggregate([
       {
         $group: {
@@ -39,6 +38,7 @@ const validatepredictStocks = async (req, res) => {
     const uniqueStockList = Array.from(globalStockSet);
     const formattedDate = new Date().toISOString().split("T")[0];
 
+    // Step 2: Hit AI model
     const payload = { stock_name: uniqueStockList };
     const aiResponse = await sendToAIPredictModel(payload);
     const rawResults = aiResponse.results || aiResponse || {};
@@ -50,6 +50,7 @@ const validatepredictStocks = async (req, res) => {
 
     const results = [];
 
+    // Step 3: Save per-user
     for (const { userId, stocks } of userMap) {
       const userAIData = {};
       const summaryMap = {};
@@ -63,19 +64,27 @@ const validatepredictStocks = async (req, res) => {
         userAIData[normalizedStock] = data;
 
         summaryMap[normalizedStock] = {
-          overall_score: data.validation_scores.aggregate_score,
-          grade: data.validation_scores.score_grade,
-          confidence: data.decision?.confidence || "N/A",
-          validation_breakdown: {
-            basic_checks: data.validation_scores.layer_scores.immediate.score,
-            investment_logic: data.validation_scores.layer_scores.thesis.score,
-            market_timing: data.validation_scores.layer_scores.market_context.score
-          },
-          track_record: {
-            accuracy: data.validation_stats.system_accuracy,
-            avg_approved_return: data.validation_stats.avg_return_validated_trades,
-            avg_rejected_return: data.validation_stats.avg_return_rejected_trades,
-            trades_protected: data.validation_stats.total_trades_protected
+          validation_scores: {
+            aggregate_score: data.validation_scores.aggregate_score,
+            score_grade: data.validation_scores.score_grade,
+            score_color: data.validation_scores.score_color,
+            layer_scores: {
+              immediate: {
+                score: data.validation_scores.layer_scores?.immediate?.score || null,
+                status: data.validation_scores.layer_scores?.immediate?.status || "",
+                description: data.validation_scores.layer_scores?.immediate?.description || ""
+              },
+              thesis: {
+                score: data.validation_scores.layer_scores?.thesis?.score || null,
+                status: data.validation_scores.layer_scores?.thesis?.status || "",
+                description: data.validation_scores.layer_scores?.thesis?.description || ""
+              },
+              market_context: {
+                score: data.validation_scores.layer_scores?.market_context?.score || null,
+                status: data.validation_scores.layer_scores?.market_context?.status || "",
+                description: data.validation_scores.layer_scores?.market_context?.description || ""
+              }
+            }
           },
           lastUpdated: new Date()
         };
@@ -90,66 +99,10 @@ const validatepredictStocks = async (req, res) => {
         summary: summaryMap
       });
 
-     
-      const userRecords = await validatePredictedStock.find({ userId });
-      const stockMap = {};
-
-      for (const record of userRecords) {
-        const isToday = record.date === formattedDate;
-        const summary = record.summary || {};
-
-        for (const stockSymbol in summary) {
-          const data = summary[stockSymbol];
-          if (!stockMap[stockSymbol]) {
-            stockMap[stockSymbol] = {
-              overall: [],
-              today: null
-            };
-          }
-          stockMap[stockSymbol].overall.push(data);
-          if (isToday) {
-            stockMap[stockSymbol].today = data;
-          }
-        }
-      }
-
-      const summaryResponse = {};
-      for (const stock in stockMap) {
-        const entries = stockMap[stock].overall;
-        const todayData = stockMap[stock].today;
-
-        const overall_average = {
-          averageAccuracy: average(entries.map(e => parseFloat(e.track_record.accuracy) || 0)),
-          overallScore: average(entries.map(e => e.overall_score)),
-          avgApprovedReturn: average(entries.map(e => parseFloat(e.track_record.avg_approved_return) || 0)),
-          avgRejectedReturn: average(entries.map(e => parseFloat(e.track_record.avg_rejected_return) || 0))
-        };
-
-        const today_average = todayData ? {
-          averageAccuracy: parseFloat(todayData.track_record.accuracy) || 0,
-          overallScore: todayData.overall_score || 0,
-          avgApprovedReturn: parseFloat(todayData.track_record.avg_approved_return) || 0,
-          avgRejectedReturn: parseFloat(todayData.track_record.avg_rejected_return) || 0
-        } : {};
-
-        summaryResponse[stock] = {
-          overall_average,
-          today_average
-        };
-      }
-
-      if (Object.keys(summaryResponse).length > 0) {
-        io.emit("validation_summary_in", {
-          userId,
-          message: `✅ AI validate summary pre market complete for user ${userId}`,
-          summaryData: summaryResponse
-        });
-      }
-
       results.push({ userId, savedStocks: Object.keys(userAIData).length });
     }
 
-    return res.json({ message: "✅ AI results saved and emitted with summaries", results });
+    return res.json({ message: "✅ AI results saved with summaries", results });
 
   } catch (error) {
     console.error("❌ Prediction error:", error);
@@ -159,6 +112,7 @@ const validatepredictStocks = async (req, res) => {
     });
   }
 };
+
 
 const getSummaryByUser = async (req, res) => {
   try {
@@ -186,6 +140,8 @@ const getSummaryByUser = async (req, res) => {
 
       for (const stockSymbol in summary) {
         const data = summary[stockSymbol];
+        const validation = data?.validation_scores || {};
+
         if (!stockMap[stockSymbol]) {
           stockMap[stockSymbol] = {
             overall: [],
@@ -193,9 +149,9 @@ const getSummaryByUser = async (req, res) => {
           };
         }
 
-        stockMap[stockSymbol].overall.push(data);
+        stockMap[stockSymbol].overall.push(validation);
         if (isToday) {
-          stockMap[stockSymbol].today = data;
+          stockMap[stockSymbol].today = validation;
         }
       }
     }
@@ -208,24 +164,44 @@ const getSummaryByUser = async (req, res) => {
 
       const overall_average = {
         averageAccuracy: average(entries.map(e => parseFloat(e.track_record?.accuracy) || 0)),
-        overallScore: average(entries.map(e => e.overall_score || 0)),
+        overallScore: average(entries.map(e => e.aggregate_score || 0)),
         avgApprovedReturn: average(entries.map(e => parseFloat(e.track_record?.avg_approved_return) || 0)),
         avgRejectedReturn: average(entries.map(e => parseFloat(e.track_record?.avg_rejected_return) || 0))
       };
 
       const today_average = todayData ? {
         averageAccuracy: parseFloat(todayData.track_record?.accuracy) || 0,
-        overallScore: todayData.overall_score || 0,
+        overallScore: todayData.aggregate_score || 0,
         avgApprovedReturn: parseFloat(todayData.track_record?.avg_approved_return) || 0,
         avgRejectedReturn: parseFloat(todayData.track_record?.avg_rejected_return) || 0
       } : {};
 
+      // Extract layer_scores safely
+      const layer_scores = todayData?.layer_scores || {};
+      const validation_breakdown = {
+        immediate: {
+          score: layer_scores.immediate?.score || null,
+          status: layer_scores.immediate?.status || "",
+          description: layer_scores.immediate?.description || ""
+        },
+        thesis: {
+          score: layer_scores.thesis?.score || null,
+          status: layer_scores.thesis?.status || "",
+          description: layer_scores.thesis?.description || ""
+        },
+        market_context: {
+          score: layer_scores.market_context?.score || null,
+          status: layer_scores.market_context?.status || "",
+          description: layer_scores.market_context?.description || ""
+        }
+      };
+
       response[stock] = {
         overall_average,
         today_average,
-        grade: todayData?.grade || null,
+        grade: todayData?.score_grade || null,
         confidence: todayData?.confidence || null,
-        validation_breakdown: todayData?.validation_breakdown || {},
+        validation_breakdown,
         track_record: todayData?.track_record || {}
       };
     }
@@ -236,6 +212,7 @@ const getSummaryByUser = async (req, res) => {
     return res.status(500).json({ error: "Internal server error", details: err.message });
   }
 };
+
 // Helpers
 module.exports = {
   validatepredictStocks,
