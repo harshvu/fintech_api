@@ -127,7 +127,7 @@ cron.schedule("30 8 * * *", () => {
 }, { timezone: "Asia/Kolkata" });
 
 // 🔁 predictStocksIn - Every 2 hours from 09:01 to 15:30
-cron.schedule("1 13-30/2 * * *", () => {
+cron.schedule("1 14-15/1 * * *", () => {
   const now = new Date();
   const hour = now.getHours();
   const minute = now.getMinutes();
@@ -137,7 +137,7 @@ cron.schedule("1 13-30/2 * * *", () => {
     return;
   }
 
-  console.log("⏱️ Cron: predictStocksIn (every 2 hours from 9:01 to 15:30)");
+  console.log("⏱️ Cron: predictStocksIn (every 2 hours from 1:01 PM to 3:01 PM)");
   runPredictStocksIn();
 }, { timezone: "Asia/Kolkata" });
 
