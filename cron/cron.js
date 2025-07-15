@@ -39,7 +39,7 @@ cron.schedule("20 9 * * *", () => {
 }, { timezone: "Asia/Kolkata" });
 
 // 🕘 Intra-Day Prediction — every 5 mins from 9:01 AM to 3:30 PM
-const cron = require("node-cron");
+
 
 // Run every 10 minutes from 12:20 AM onwards
 cron.schedule("*/10 * * * *", () => {
@@ -48,7 +48,7 @@ cron.schedule("*/10 * * * *", () => {
   const minute = indiaTime.getMinutes();
 
   // Start only if current time is >= 12:20 AM IST
-  if (hour === 0 && minute < 20) {
+  if (hour === 0 && minute < 25) {
     console.log("⏭️ Skipping: Before 12:20 AM IST");
     return;
   }
