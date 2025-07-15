@@ -111,7 +111,7 @@ cron.schedule("20 9 * * *", () => {
 });
 
 // predictStocksPre at 8:15 AM
-cron.schedule("15 8 * * *", () => {
+cron.schedule("30 8 * * *", () => {
   console.log("⏱️ Running cron job: predictStocksPre (8:15 AM)");
   runPredictStocks();
 });

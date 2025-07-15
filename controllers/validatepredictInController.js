@@ -90,14 +90,7 @@ const validatepredictStocks = async (req, res) => {
         summary: summaryMap
       });
 
-      // 🔁 Emit raw prediction results
-      io.emit("validation_In_market", {
-        userId,
-        message: `✅ AI validation prediction complete for user ${userId}`,
-        aiResponse: userAIData
-      });
-
-      // 🔁 Build today's + overall summary
+     
       const userRecords = await validatePredictedStock.find({ userId });
       const stockMap = {};
 
