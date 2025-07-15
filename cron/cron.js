@@ -141,20 +141,20 @@ cron.schedule("30 8 * * *", () => {
 //   runPredictStocksIn();
 // }, { timezone: "Asia/Kolkata" });
 
-cron.schedule("*/5 14-15 * * *", () => {
+cron.schedule("*/5 * * * *", () => {
   const now = new Date();
-
   const indiaTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+
   const hour = indiaTime.getHours();
   const minute = indiaTime.getMinutes();
 
-  // Skip if it's past 15:30 IST
-  if (hour === 18 && minute > 30) {
-    console.log("⏭️ Skipping predictStocksIn: past 3:30 PM IST");
+  // Stop execution after 6:00 PM IST
+  if (hour >= 18) {
+    console.log("⛔ Skipping cron: past 6:00 PM IST");
     return;
   }
 
-  console.log("⏱️ Running Cron: predictStocksIn (every 5 mins from 2:00 PM to 3:30 PM IST) at", indiaTime.toLocaleTimeString("en-IN", { hour12: true }));
+  console.log(`⏱️ Running Cron (IST): ${indiaTime.toLocaleTimeString("en-IN", { hour12: true })}`);
   runPredictStocksIn();
 }, { timezone: "Asia/Kolkata" });
 
