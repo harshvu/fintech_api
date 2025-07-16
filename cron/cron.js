@@ -35,7 +35,7 @@ cron.schedule("20 8 * * *", () => {
 
 
 // Run every 10 minutes from 12:20 AM onwards
-cron.schedule("1 9,11,13,15 * * *", () => {
+cron.schedule("15 9,11,13,15 * * *", () => {
   const indiaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
   console.log(`⏱️ Running: Intra-Day Prediction at ${indiaTime.toLocaleTimeString("en-IN", { hour12: true })}`);
   runPredictStocksIn();
