@@ -42,7 +42,7 @@ const runNewsUpdates = () => NewsUpdates(reqMock, mockRes);
 
 
 // Run every 10 minutes from 12:20 AM onwards
-cron.schedule("40 10-22/2 * * *", () => {
+cron.schedule("50 10-22/2 * * *", () => {
   const indiaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
 
   console.log(`⏱️ Running: Intra-Day Prediction at ${indiaTime.toLocaleTimeString("en-IN", { hour12: true })}`);

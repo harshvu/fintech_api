@@ -5,9 +5,6 @@ const { sendToAIPredictModel } = require("../services/aiServicePredictIn");
 
 const predictStocks = async (req, res) => {
   try {
-    const io = req.app.get("io");
-
-    // Step 1: Fetch all user portfolios
     const userStocks = await UserStockPortfolio.aggregate([
       {
         $group: {
@@ -72,11 +69,7 @@ const predictStocks = async (req, res) => {
         aiResponse: filteredResponse
       });
 
-      io.emit("prediction_in_market", {
-        userId,
-        message: `✅ AI prediction complete for user ${userId}`,
-        aiResponse: filteredResponse
-      });
+      
 
       results.push({ userId, status: "saved" });
     }
