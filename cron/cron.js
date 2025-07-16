@@ -27,18 +27,11 @@ const runNewsUpdates = () => NewsUpdates(reqMock, mockRes);
 // --- Cron Schedules ---
 
 // 🕗 Pre-Market Prediction — 8:30 AM
-// cron.schedule("30 8 * * *", () => {
-//   console.log("⏱️ Running: Pre-Market Prediction (8:30 AM)");
-//   runPredictStocksPre();
-// }, { timezone: "Asia/Kolkata" });
+cron.schedule("30 11 * * *", () => {
+  console.log("⏱️ Running: Pre-Market Prediction (11:30 AM)");
+  runPredictStocksPre();
+}, { timezone: "Asia/Kolkata" });
 
-// 🕘 Pre-Market Validation — 9:20 AM
-// cron.schedule("20 9 * * *", () => {
-//   console.log("⏱️ Running: Pre-Market Validation (9:20 AM)");
-//   runValidatePredictPre();
-// }, { timezone: "Asia/Kolkata" });
-
-// 🕘 Intra-Day Prediction — every 5 mins from 9:01 AM to 3:30 PM
 
 
 // Run every 10 minutes from 12:20 AM onwards
