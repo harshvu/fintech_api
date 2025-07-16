@@ -44,20 +44,12 @@ cron.schedule("50 10-22/2 * * *", () => {
 
 
 // 🕥 Intra-Day Validation — every 2 hours from 10:40 AM to 4:00 PM
-// cron.schedule("40 10-16/2 * * *", () => {
-//   const now = new Date();
-//   const indiaTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-//   const hour = indiaTime.getHours();
-//   const minute = indiaTime.getMinutes();
+cron.schedule("40 11 * * *", () => {
+  const indiaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
 
-//   if (hour === 16 && minute > 0) {
-//     console.log("⛔ Skipping: Validation after 4:00 PM IST");
-//     return;
-//   }
-
-//   console.log(`⏱️ Running: Intra-Day Validation at ${indiaTime.toLocaleTimeString("en-IN", { hour12: true })}`);
-//   runValidatePredictIn();
-// }, { timezone: "Asia/Kolkata" });
+  console.log(`⏱️ Running: Intra-Day Validation at ${indiaTime.toLocaleTimeString("en-IN", { hour12: true })}`);
+  runValidatePredictIn();
+}, { timezone: "Asia/Kolkata" });
 
 // 📆 Daily Updates — 9:01 AM
 // cron.schedule("1 9 * * *", () => {
