@@ -27,7 +27,7 @@ const runNewsUpdates = () => NewsUpdates(reqMock, mockRes);
 // --- Cron Schedules ---
 
 // 🕗 Pre-Market Prediction — 8:30 AM
-cron.schedule("30 11 * * *", () => {
+cron.schedule("20 8 * * *", () => {
   console.log("⏱️ Running: Pre-Market Prediction (11:30 AM)");
   runPredictStocksPre();
 }, { timezone: "Asia/Kolkata" });
@@ -35,16 +35,20 @@ cron.schedule("30 11 * * *", () => {
 
 
 // Run every 10 minutes from 12:20 AM onwards
-cron.schedule("50 10-22/2 * * *", () => {
+cron.schedule("1 9,11,13,15 * * *", () => {
   const indiaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-
   console.log(`⏱️ Running: Intra-Day Prediction at ${indiaTime.toLocaleTimeString("en-IN", { hour12: true })}`);
   runPredictStocksIn();
 }, { timezone: "Asia/Kolkata" });
 
+cron.schedule("30 9 * * *", () => {
+  const indiaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
 
+  console.log(`⏱️ Running: Intra-Day Validation at ${indiaTime.toLocaleTimeString("en-IN", { hour12: true })}`);
+  runValidatePredictPre();
+}, { timezone: "Asia/Kolkata" });
 // 🕥 Intra-Day Validation — every 2 hours from 10:40 AM to 4:00 PM
-cron.schedule("40 11 * * *", () => {
+cron.schedule("40 15 * * *", () => {
   const indiaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
 
   console.log(`⏱️ Running: Intra-Day Validation at ${indiaTime.toLocaleTimeString("en-IN", { hour12: true })}`);
@@ -52,24 +56,37 @@ cron.schedule("40 11 * * *", () => {
 }, { timezone: "Asia/Kolkata" });
 
 // 📆 Daily Updates — 9:01 AM
-// cron.schedule("1 9 * * *", () => {
-//   console.log("⏱️ Running: Daily Updates (9:01 AM)");
-//   runDailyUpdates();
-// }, { timezone: "Asia/Kolkata" });
+let hasRunToday = false;
 
-// 📰 News Updates — every hour before 3:30 PM
-// cron.schedule("1 * * * *", () => {
-//   const now = new Date();
-//   const indiaTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-//   const hour = indiaTime.getHours();
-//   const minute = indiaTime.getMinutes();
+cron.schedule("1 9 * * *", () => {
+  if (!hasRunToday) {
+    console.log("⏱️ Running: Daily Updates (9:01 AM)");
+    runDailyUpdates();
+    hasRunToday = true;
+  }
+}, { timezone: "Asia/Kolkata" });
 
-//   if (hour > 15 || (hour === 15 && minute > 30) || hour >= 18) {
-//     console.log("⛔ Skipping: News Updates after 3:30 PM or 6 PM");
-//     return;
-//   }
+// Optional: Reset the flag at midnight
+cron.schedule("0 0 * * *", () => {
+  hasRunToday = false;
+}, { timezone: "Asia/Kolkata" });
 
-//   console.log(`📰 Running: News Updates at ${indiaTime.toLocaleTimeString("en-IN", { hour12: true })}`);
-//   runNewsUpdates();
-// }, { timezone: "Asia/Kolkata" });
+cron.schedule("15 * * * *", () => {
+  const now = new Date();
+  const indiaTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  const hour = indiaTime.getHours();
+  const minute = indiaTime.getMinutes();
+
+  // Allow from 9:15 AM to 3:15 PM (last allowed run starts at 3:15 PM)
+  if (hour < 9 || (hour === 9 && minute < 15) || hour > 15 || (hour === 15 && minute > 15)) {
+    console.log("⛔ Skipping: News Updates outside 9:15 AM to 3:15 PM window");
+    return;
+  }
+
+  console.log(`📰 Running: News Updates at ${indiaTime.toLocaleTimeString("en-IN", { hour12: true })}`);
+  runNewsUpdates();
+}, { timezone: "Asia/Kolkata" });
+
+
+
 

@@ -3,7 +3,7 @@ const { sendToAIPredictModel } = require("../services/aiNewsUpdates");
 
 const predictStocks = async (req, res) => {
   try {
-    const io = req.app.get("io");
+    // const io = req.app.get("io");
     const aiResponse = await sendToAIPredictModel(); // assumes default inside service
  // 🔹 Save AI response with timestamp only
     const saved = await PredictedStock.create({
@@ -13,10 +13,10 @@ const predictStocks = async (req, res) => {
     });
 
     // 🔹 Broadcast via Socket.IO
-    io.emit("news_updates", {
-      message: "✅ AI News Update Complete",
-      aiResponse
-    });
+    // io.emit("news_updates", {
+    //   message: "✅ AI News Update Complete",
+    //   aiResponse
+    // });
 
     return res.json({
       message: "✅ AI response saved and broadcasted",

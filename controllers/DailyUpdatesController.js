@@ -3,7 +3,7 @@ const { sendToAIPredictModel } = require("../services/aiDailyUpdates");
 
 const predictStocks = async (req, res) => {
   try {
-    const io = req.app.get("io");
+    // const io = req.app.get("io");
 
     // Define input schema
     const payload = {
@@ -21,10 +21,10 @@ const predictStocks = async (req, res) => {
     });
 
     // 🔹 Broadcast via Socket.IO
-    io.emit("daily_updates", {
-      message: "✅ AI Daily Update Complete",
-      aiResponse
-    });
+    // io.emit("daily_updates", {
+    //   message: "✅ AI Daily Update Complete",
+    //   aiResponse
+    // });
 
     return res.json({
       message: "✅ AI response saved and broadcasted",
