@@ -18,7 +18,7 @@ function percentage(arr) {
 // ✅ Controller: Save AI Predictions and Summary
 const validatepredictStocks = async (req, res) => {
   try {
-    const io = req.app.get("io");
+    // const io = req.app.get("io");
 
     // Step 1: Group user portfolios
     const userStocks = await UserStockPortfolio.aggregate([
@@ -103,11 +103,11 @@ const validatepredictStocks = async (req, res) => {
 
       // Step 5: Emit raw prediction result
       console.log(`📤 Emitting validation_pre_market for user ${userId}`);
-      io.emit("validation_pre_market", {
-        userId,
-        message: `✅ AI validation prediction complete for user ${userId}`,
-        aiResponse: userAIData
-      });
+      // io.emit("validation_pre_market", {
+      //   userId,
+      //   message: `✅ AI validation prediction complete for user ${userId}`,
+      //   aiResponse: userAIData
+      // });
 
       // Step 6: Fetch all user records for summary emit
       const userRecords = await validatePredictedStock.find({ userId });

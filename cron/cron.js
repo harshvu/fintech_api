@@ -41,7 +41,7 @@ cron.schedule("15 9,11,13,15 * * *", () => {
   runPredictStocksIn();
 }, { timezone: "Asia/Kolkata" });
 
-cron.schedule("30 9 * * *", () => {
+cron.schedule("50 10 * * *", () => {
   const indiaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
 
   console.log(`⏱️ Running: Intra-Day Validation at ${indiaTime.toLocaleTimeString("en-IN", { hour12: true })}`);
