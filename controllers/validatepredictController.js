@@ -167,10 +167,10 @@ const validatepredictStocks = async (req, res) => {
         console.log(`📤 Emitting validation_summary for user ${userId}`);
         console.log("Summary Payload:", JSON.stringify(summaryResponse, null, 2));
 
-        io.emit("validation_summary", {
-          userId,
-          summaryData: summaryResponse
-        });
+        // io.emit("validation_summary", {
+        //   userId,
+        //   summaryData: summaryResponse
+        // });
       } else {
         console.warn(`⚠️ No summary to emit for user ${userId}`);
       }
