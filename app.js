@@ -30,6 +30,11 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use((req, res, next) => {
   res.status(404).json({ message: 'Not Found' });
 });
+// avnish sir code
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 //cron 
 require("./cron/cron.js");
 // Error handler

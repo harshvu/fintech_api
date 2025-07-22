@@ -5,6 +5,7 @@ const { validatepredictStocks: validatepredictStocksPre } = require("../controll
 const { validatepredictStocks: validatepredictStocksIn } = require("../controllers/validatepredictInController");
 const { predictStocks: DailyUpdates } = require("../controllers/DailyUpdatesController");
 const { predictStocks: NewsUpdates } = require("../controllers/newsUpdatesController");
+const isMarketHoliday = require("../utils/isMarketHoliday");
 
 const mockRes = {
   json: (data) => console.log("✅ Cron success:", data),
@@ -13,8 +14,7 @@ const mockRes = {
   }),
 };
 
-// Remove io usage if you’re not using socket anymore
-const reqMock = {}; // No need to mock `app.get("io")`
+const reqMock = {};
 
 // --- Cron Wrappers ---
 const runPredictStocksPre = () => predictStocksPre(reqMock, mockRes);
@@ -26,67 +26,70 @@ const runNewsUpdates = () => NewsUpdates(reqMock, mockRes);
 
 // --- Cron Schedules ---
 
-// 🕗 Pre-Market Prediction — 8:30 AM
-cron.schedule("20 8 * * *", () => {
-  console.log("⏱️ Running: Pre-Market Prediction (11:30 AM)");
+// 🕗 Pre-Market Prediction — 8:20 AM (Mon–Fri)
+cron.schedule("20 8 * * 1-5", () => {
+  if (isMarketHoliday()) return console.log("📛 Skipping Pre-Market Prediction: Market Holiday");
+  console.log("⏱️ Running: Pre-Market Prediction (8:20 AM)");
   runPredictStocksPre();
 }, { timezone: "Asia/Kolkata" });
 
-
-
-// Run every 10 minutes from 12:20 AM onwards
-cron.schedule("15 9,11,13,15 * * *", () => {
+// 🔄 Intra-Day Predictions — 9:15, 11:15, 1:15, 3:15 (Mon–Fri)
+cron.schedule("15 9,11,13,15 * * 1-5", () => {
+  if (isMarketHoliday()) return console.log("📛 Skipping Intra-Day Prediction: Market Holiday");
   const indiaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
   console.log(`⏱️ Running: Intra-Day Prediction at ${indiaTime.toLocaleTimeString("en-IN", { hour12: true })}`);
   runPredictStocksIn();
 }, { timezone: "Asia/Kolkata" });
 
-cron.schedule("50 10 * * *", () => {
+// ✅ Intra-Day Pre Validation — 10:50 AM (Mon–Fri)
+cron.schedule("50 10 * * 1-5", () => {
+  if (isMarketHoliday()) return console.log("📛 Skipping Intra-Day Validation (Pre): Market Holiday");
   const indiaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-
   console.log(`⏱️ Running: Intra-Day Validation at ${indiaTime.toLocaleTimeString("en-IN", { hour12: true })}`);
   runValidatePredictPre();
 }, { timezone: "Asia/Kolkata" });
-// 🕥 Intra-Day Validation — every 2 hours from 10:40 AM to 4:00 PM
-cron.schedule("40 15 * * *", () => {
-  const indiaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
 
+// ✅ Intra-Day Post Validation — 3:40 PM (Mon–Fri)
+cron.schedule("40 15 * * 1-5", () => {
+  if (isMarketHoliday()) return console.log("📛 Skipping Intra-Day Validation (Post): Market Holiday");
+  const indiaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
   console.log(`⏱️ Running: Intra-Day Validation at ${indiaTime.toLocaleTimeString("en-IN", { hour12: true })}`);
   runValidatePredictIn();
 }, { timezone: "Asia/Kolkata" });
 
-// 📆 Daily Updates — 9:01 AM
+// 📆 Daily Updates — 9:01 AM (Mon–Fri)
 let hasRunToday = false;
-
-cron.schedule("1 9 * * *", () => {
-  if (!hasRunToday) {
-    console.log("⏱️ Running: Daily Updates (9:01 AM)");
-    runDailyUpdates();
-    hasRunToday = true;
+cron.schedule("1 9 * * 1-5", () => {
+  if (hasRunToday || isMarketHoliday()) {
+    console.log("📛 Skipping Daily Updates: Already Run or Market Holiday");
+    return;
   }
+  console.log("⏱️ Running: Daily Updates (9:01 AM)");
+  runDailyUpdates();
+  hasRunToday = true;
 }, { timezone: "Asia/Kolkata" });
 
-// Optional: Reset the flag at midnight
+// 🔄 Reset daily flag at midnight
 cron.schedule("0 0 * * *", () => {
   hasRunToday = false;
 }, { timezone: "Asia/Kolkata" });
 
-cron.schedule("15 * * * *", () => {
+// 📰 News Updates — Every hour at :15 (9:15 AM – 3:15 PM, Mon–Fri)
+cron.schedule("15 * * * 1-5", () => {
   const now = new Date();
   const indiaTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
   const hour = indiaTime.getHours();
   const minute = indiaTime.getMinutes();
 
-  // Allow from 9:15 AM to 3:15 PM (last allowed run starts at 3:15 PM)
-  if (hour < 9 || (hour === 9 && minute < 15) || hour > 15 || (hour === 15 && minute > 15)) {
-    console.log("⛔ Skipping: News Updates outside 9:15 AM to 3:15 PM window");
+  if (
+    isMarketHoliday() ||
+    hour < 9 || (hour === 9 && minute < 15) ||
+    hour > 15 || (hour === 15 && minute > 15)
+  ) {
+    console.log("⛔ Skipping: News Updates outside 9:15 AM to 3:15 PM window or Market Holiday");
     return;
   }
 
   console.log(`📰 Running: News Updates at ${indiaTime.toLocaleTimeString("en-IN", { hour12: true })}`);
   runNewsUpdates();
 }, { timezone: "Asia/Kolkata" });
-
-
-
-
