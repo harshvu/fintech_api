@@ -42,7 +42,7 @@ cron.schedule("15 9,11,13,15 * * 1-5", () => {
 }, { timezone: "Asia/Kolkata" });
 
 // ✅ Intra-Day Pre Validation — 10:50 AM (Mon–Fri)
-cron.schedule("50 10 * * 1-5", () => {
+cron.schedule("20 9 * * 1-5", () => {
   if (isMarketHoliday()) return console.log("📛 Skipping Intra-Day Validation (Pre): Market Holiday");
   const indiaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
   console.log(`⏱️ Running: Intra-Day Validation at ${indiaTime.toLocaleTimeString("en-IN", { hour12: true })}`);
@@ -75,21 +75,19 @@ cron.schedule("0 0 * * *", () => {
 }, { timezone: "Asia/Kolkata" });
 
 // 📰 News Updates — Every hour at :15 (9:15 AM – 3:15 PM, Mon–Fri)
-cron.schedule("15 * * * 1-5", () => {
+cron.schedule("0 7-15 * * 1-5", () => {
   const now = new Date();
   const indiaTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
   const hour = indiaTime.getHours();
   const minute = indiaTime.getMinutes();
 
-  if (
-    isMarketHoliday() ||
-    hour < 9 || (hour === 9 && minute < 15) ||
-    hour > 15 || (hour === 15 && minute > 15)
-  ) {
-    console.log("⛔ Skipping: News Updates outside 9:15 AM to 3:15 PM window or Market Holiday");
+  // Check if it's a market holiday
+  if (isMarketHoliday()) {
+    console.log("⛔ Skipping: Market Holiday");
     return;
   }
 
   console.log(`📰 Running: News Updates at ${indiaTime.toLocaleTimeString("en-IN", { hour12: true })}`);
   runNewsUpdates();
 }, { timezone: "Asia/Kolkata" });
+
