@@ -31,7 +31,7 @@ const predictStocks = async (req, res) => {
       is_market_open:"open"
      
     };
-
+    console.log("payload"+ payload);
     const aiResponse = await sendToAIPredictModel(payload);
 
     // 🔁 Step 3.5: Convert { res1, res2, ... } into { ticker: data }

@@ -35,7 +35,7 @@ const predictStocks = async (req, res) => {
       batch_size: 5,
       max_concurrent: 3
     };
-
+   
     const aiResponse = await sendToAIPredictModel(payload);
 
     // ✅ FIX: Use aiResponse.results
