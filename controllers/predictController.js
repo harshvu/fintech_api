@@ -20,13 +20,17 @@ const predictStocks = async (req, res) => {
     // Step 2: Create global unique stock list
     const globalStockSet = new Set();
 
-    const userMap = userStocks.map(({ _id, stocks }) => {
-      const sanitized = stocks.map(s => s.replace(/\.BO$/, '').toUpperCase());
+    // const userMap = userStocks.map(({ _id, stocks }) => {
+    //   const sanitized = stocks.map(s => s.replace(/\.BO$/, '').toUpperCase());
+    //   sanitized.forEach(stock => globalStockSet.add(stock));
+    //   return { userId: _id, stocks: sanitized };
+    // });
+  const userMap = userStocks.map(({ _id, stocks }) => {
+      const sanitized = stocks.map(s => s.toUpperCase()); // No extension removed
       sanitized.forEach(stock => globalStockSet.add(stock));
       return { userId: _id, stocks: sanitized };
     });
-
-    const uniqueStockList = Array.from(globalStockSet).sort();
+  const uniqueStockList = Array.from(globalStockSet).sort();
 
     // Step 3: Send to AI once
     const payload = {

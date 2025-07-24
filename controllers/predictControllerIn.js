@@ -3,6 +3,84 @@ const UserStockPortfolio = require("../models/stockPortfolio.model");
 const PredictedStock = require("../models/predictedStockIn");
 const { sendToAIPredictModel } = require("../services/aiServicePredictIn");
 
+// const predictStocks = async (req, res) => {
+//   try {
+//     const userStocks = await UserStockPortfolio.aggregate([
+//       {
+//         $group: {
+//           _id: "$userId",
+//           stocks: { $addToSet: "$stockName" }
+//         }
+//       }
+//     ]);
+
+//     // Step 2: Create a Set of all unique stocks across all users
+//     const globalStockSet = new Set();
+
+//     const userMap = userStocks.map(({ _id, stocks }) => {
+//       const sanitized = stocks.map(s => s.replace(/\.BO$/, '').toUpperCase());
+//       sanitized.forEach(stock => globalStockSet.add(stock));
+//       return { userId: _id, stocks: sanitized };
+//     });
+
+//     const uniqueStockList = Array.from(globalStockSet).sort();
+
+//     // Step 3: Prepare payload and send to AI once
+//     const payload = {
+//       ticker: uniqueStockList,
+//       is_market_open:"open"
+     
+//     };
+//     console.log("payload"+ payload);
+//     const aiResponse = await sendToAIPredictModel(payload);
+
+//     // 🔁 Step 3.5: Convert { res1, res2, ... } into { ticker: data }
+//     const tickerToDataMap = {};
+//     const resultsFromAI = aiResponse.results || {};
+
+//     for (const key in resultsFromAI) {
+//       const result = resultsFromAI[key];
+//       const ticker = result?.ticker?.toUpperCase();
+//       if (ticker) {
+//         tickerToDataMap[ticker] = result;
+//       }
+//     }
+
+//     // Step 4: Store and emit per user
+//     const results = [];
+
+//     for (const { userId, stocks } of userMap) {
+//       const filteredResponse = {};
+
+//       for (const stock of stocks) {
+//         if (tickerToDataMap[stock]) {
+//           filteredResponse[stock] = tickerToDataMap[stock];
+//         }
+//       }
+
+//       if (Object.keys(filteredResponse).length === 0) {
+//         console.log(`No AI response found for user ${userId}, skipping.`);
+//         continue;
+//       }
+
+//       await PredictedStock.create({
+//         userId,
+//         stockNames: stocks,
+//         aiResponse: filteredResponse
+//       });
+
+      
+
+//       results.push({ userId, status: "saved" });
+//     }
+
+//     return res.json({ message: "✅ AI called once, user responses saved", results});
+
+//   } catch (error) {
+//     console.error("Prediction error:", error.message);
+//     return res.status(500).json({ error: "Prediction failed", details: error.message });
+//   }
+// };
 const predictStocks = async (req, res) => {
   try {
     const userStocks = await UserStockPortfolio.aggregate([
@@ -14,27 +92,24 @@ const predictStocks = async (req, res) => {
       }
     ]);
 
-    // Step 2: Create a Set of all unique stocks across all users
     const globalStockSet = new Set();
 
     const userMap = userStocks.map(({ _id, stocks }) => {
-      const sanitized = stocks.map(s => s.replace(/\.BO$/, '').toUpperCase());
+      const sanitized = stocks.map(s => s.toUpperCase()); // No extension removed
       sanitized.forEach(stock => globalStockSet.add(stock));
       return { userId: _id, stocks: sanitized };
     });
 
     const uniqueStockList = Array.from(globalStockSet).sort();
 
-    // Step 3: Prepare payload and send to AI once
     const payload = {
       ticker: uniqueStockList,
-      is_market_open:"open"
-     
+      is_market_open: "open"
     };
-    console.log("payload"+ payload);
-    const aiResponse = await sendToAIPredictModel(payload);
 
-    // 🔁 Step 3.5: Convert { res1, res2, ... } into { ticker: data }
+    console.log("📦 Payload sent to AI:", payload);
+
+    const aiResponse = await sendToAIPredictModel(payload);
     const tickerToDataMap = {};
     const resultsFromAI = aiResponse.results || {};
 
@@ -46,7 +121,6 @@ const predictStocks = async (req, res) => {
       }
     }
 
-    // Step 4: Store and emit per user
     const results = [];
 
     for (const { userId, stocks } of userMap) {
@@ -59,7 +133,7 @@ const predictStocks = async (req, res) => {
       }
 
       if (Object.keys(filteredResponse).length === 0) {
-        console.log(`No AI response found for user ${userId}, skipping.`);
+        console.log(`⚠️ No AI response for user ${userId}, skipping.`);
         continue;
       }
 
@@ -69,15 +143,13 @@ const predictStocks = async (req, res) => {
         aiResponse: filteredResponse
       });
 
-      
-
       results.push({ userId, status: "saved" });
     }
 
-    return res.json({ message: "✅ AI called once, user responses saved", results});
+    return res.json({ message: "✅ AI called once, user responses saved", results });
 
   } catch (error) {
-    console.error("Prediction error:", error.message);
+    console.error("❌ Prediction error:", error.message);
     return res.status(500).json({ error: "Prediction failed", details: error.message });
   }
 };
