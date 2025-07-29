@@ -58,9 +58,10 @@ const validatepredictStocks = async (req, res) => {
 
         summaryMap[normalizedStock] = {
           recordCount: 1,
-          averageAccuracy: (data.overall_accuracy || 0),
+          averageAccuracy: data.overall_accuracy || 0,
           avgPredictedGap: data.predicted_gap_percentage || 0,
-          avgActualGap: data.direction_correct ? 1 : 0,
+          avgActualGap: data.direction_correct ? 1 : 0, // <== Based on your request
+          directionAccuracyRate: data.direction_correct ? 1 : 0,
           openingRangeAccuracyRate: data.gap_type_correct ? 1 : 0,
           supportLevelAccuracyRate: data.support_level_accuracy ? 1 : 0,
           resistanceLevelAccuracyRate: data.resistance_level_accuracy ? 1 : 0,
@@ -152,6 +153,10 @@ const validatepredictStocks = async (req, res) => {
     });
   }
 };
+
+// Utility functions
+
+
 
 // Utility functions
 function average(arr) {
