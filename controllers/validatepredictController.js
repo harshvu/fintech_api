@@ -60,7 +60,7 @@ const validatepredictStocks = async (req, res) => {
           recordCount: 1,
           averageAccuracy: (data.overall_accuracy || 0),
           avgPredictedGap: data.predicted_gap_percentage || 0,
-          avgActualGap: data.actual_gap_percentage || 0,
+          avgActualGap: data.direction_correct ? 1 : 0,
           openingRangeAccuracyRate: data.gap_type_correct ? 1 : 0,
           supportLevelAccuracyRate: data.support_level_accuracy ? 1 : 0,
           resistanceLevelAccuracyRate: data.resistance_level_accuracy ? 1 : 0,
