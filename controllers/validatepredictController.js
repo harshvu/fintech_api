@@ -4,23 +4,8 @@ const UserStockPortfolio = require("../models/stockPortfolio.model");
 const validatePredictedStock = require("../models/validatepredictedStock");
 const { sendToAIPredictModel } = require("../services/aiServicePredictvalidatepre");
 
-function average(arr) {
-  if (!arr.length) return 0;
-  const total = arr.reduce((sum, v) => sum + (parseFloat(v) || 0), 0);
-  return parseFloat((total / arr.length).toFixed(2));
-}
-
-function percentage(arr) {
-  if (!arr.length) return 0;
-  const trueCount = arr.filter(v => v === 1).length;
-  return parseFloat(((trueCount / arr.length) * 100).toFixed(2));
-}
-// ✅ Controller: Save AI Predictions and Summary
 const validatepredictStocks = async (req, res) => {
   try {
-    // const io = req.app.get("io");
-
-    // Step 1: Group user portfolios
     const userStocks = await UserStockPortfolio.aggregate([
       {
         $group: {
@@ -40,7 +25,6 @@ const validatepredictStocks = async (req, res) => {
     const uniqueStockList = Array.from(globalStockSet);
     const formattedDate = new Date().toISOString().split("T")[0];
 
-    // Step 2: AI API call
     const payload = {
       stock_name: uniqueStockList,
       date: formattedDate
@@ -50,7 +34,6 @@ const validatepredictStocks = async (req, res) => {
     const aiResponse = await sendToAIPredictModel(payload);
     const rawResults = aiResponse.results || aiResponse || {};
 
-    // Step 3: Normalize AI response
     const aiResultMap = {};
     for (const key in rawResults) {
       aiResultMap[key.trim().toUpperCase()] = rawResults[key];
@@ -75,25 +58,24 @@ const validatepredictStocks = async (req, res) => {
 
         summaryMap[normalizedStock] = {
           recordCount: 1,
-          averageAccuracy: (data.overall_accuracy_score || 0) * 100,
-          avgPredictedGap: data.predicted_gap,
-          avgActualGap: data.actual_gap,
-          openingRangeAccuracyRate: data.opening_range_accuracy ? 1 : 0,
+          averageAccuracy: (data.overall_accuracy || 0),
+          avgPredictedGap: data.predicted_gap_percentage || 0,
+          avgActualGap: data.actual_gap_percentage || 0,
+          openingRangeAccuracyRate: data.gap_type_correct ? 1 : 0,
           supportLevelAccuracyRate: data.support_level_accuracy ? 1 : 0,
           resistanceLevelAccuracyRate: data.resistance_level_accuracy ? 1 : 0,
-          predicted_range_lower: data.predicted_range_lower,
-          predicted_range_upper: data.predicted_range_upper,
-          actual_opening: data.actual_opening,
+          predicted_range_lower: data.predicted_range_lower || null,
+          predicted_range_upper: data.predicted_range_upper || null,
+          actual_opening: data.actual_open || null,
           lastUpdated: new Date()
         };
       }
 
       if (Object.keys(userAIData).length === 0) {
-        console.log(`ℹ️ No valid predictions for user ${userId}, skipping save and emit.`);
+        console.log(`ℹ️ No valid predictions for user ${userId}, skipping save.`);
         continue;
       }
 
-      // Step 4: Save to DB
       await validatePredictedStock.create({
         userId,
         date: formattedDate,
@@ -101,15 +83,6 @@ const validatepredictStocks = async (req, res) => {
         summary: summaryMap
       });
 
-      // Step 5: Emit raw prediction result
-      console.log(`📤 Emitting validation_pre_market for user ${userId}`);
-      // io.emit("validation_pre_market", {
-      //   userId,
-      //   message: `✅ AI validation prediction complete for user ${userId}`,
-      //   aiResponse: userAIData
-      // });
-
-      // Step 6: Fetch all user records for summary emit
       const userRecords = await validatePredictedStock.find({ userId });
       const stockMap = {};
 
@@ -163,22 +136,13 @@ const validatepredictStocks = async (req, res) => {
         };
       }
 
-      if (Object.keys(summaryResponse).length > 0) {
-        console.log(`📤 Emitting validation_summary for user ${userId}`);
-        console.log("Summary Payload:", JSON.stringify(summaryResponse, null, 2));
-
-        // io.emit("validation_summary", {
-        //   userId,
-        //   summaryData: summaryResponse
-        // });
-      } else {
-        console.warn(`⚠️ No summary to emit for user ${userId}`);
-      }
-
       results.push({ userId, savedStocks: Object.keys(userAIData).length });
     }
 
-    return res.json({ message: "✅ AI results saved and emitted with summaries", results });
+    return res.json({
+      message: "✅ AI results saved with updated summary format",
+      results
+    });
 
   } catch (error) {
     console.error("❌ Prediction error:", error);
@@ -188,6 +152,18 @@ const validatepredictStocks = async (req, res) => {
     });
   }
 };
+
+// Utility functions
+function average(arr) {
+  const valid = arr.filter(n => typeof n === 'number');
+  return valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : 0;
+}
+
+function percentage(arr) {
+  const valid = arr.filter(n => typeof n === 'number');
+  return valid.length ? (valid.reduce((a, b) => a + b, 0) / valid.length) * 100 : 0;
+}
+
 // ✅ Controller: Get Summary Data by User
 
 const getSummaryByUser = async (req, res) => {
