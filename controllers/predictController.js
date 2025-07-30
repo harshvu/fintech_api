@@ -126,7 +126,7 @@ const getLatestPrediction = async (req, res) => {
        const latestPrediction = await PredictedStock
        .findOne({ userId })
        .sort({ createdAt: -1 })
-       .select('aiResponse -_id'); 
+       .select('aiResponse createdAt -_id'); 
       
     // console.log("MongoDB explain output:", JSON.stringify(latestPrediction, null, 2));
 
