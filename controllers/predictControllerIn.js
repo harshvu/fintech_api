@@ -187,6 +187,7 @@ const getLatestPrediction = async (req, res) => {
 
     return res.status(200).json({
       message: "Latest prediction fetched successfully",
+      lastupdated: latestPrediction.createdAt,
       data: latestPrediction
     });
 
