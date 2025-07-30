@@ -13,10 +13,11 @@ const predictedStockInSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: getIndiaTime }
 });
 
-// Update `updatedAt` on each save to IST time
 predictedStockInSchema.pre('save', function (next) {
   this.updatedAt = getIndiaTime();
   next();
 });
 
-module.exports = mongoose.model("predictedStockIn", predictedStockInSchema);
+// ✅ Prevent OverwriteModelError
+const modelName = "predictedStockIn";
+module.exports = mongoose.models[modelName] || mongoose.model(modelName, predictedStockInSchema);
