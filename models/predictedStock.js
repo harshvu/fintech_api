@@ -31,6 +31,6 @@ predictedStockSchema.pre('save', function (next) {
 });
 
 // ✅ Prevent model overwrite during hot reloads or repeated imports
-const modelName = "predictedStockIn";
+const modelName = "PredictedStock";
 module.exports = mongoose.models[modelName] || mongoose.model(modelName, predictedStockSchema);
 
