@@ -49,7 +49,36 @@ exports.login = async (req, res) => {
     },
   });
 };
+exports.adminLogin = async (req, res) => {
+  const { email, password } = req.body;
 
+  try {
+    const admin = await User.findOne({ email });
+
+    if (!admin || !(await bcrypt.compare(password, admin.password)) || admin.role !== 1) {
+      return res.status(401).json({ error: "Invalid admin credentials" });
+    }
+
+    const accessToken = generateAccessToken(admin);
+    const refreshToken = generateRefreshToken(admin);
+
+    await Token.create({ userId: admin._id, token: refreshToken });
+
+    res.json({
+      message: "Admin login successful",
+      accessToken,
+      refreshToken,
+      admin: {
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        phone: admin.phone,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+};
 exports.refresh = async (req, res) => {
   const { token } = req.body;
   if (!token) return res.sendStatus(401);
