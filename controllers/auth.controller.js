@@ -53,9 +53,23 @@ exports.adminLogin = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const admin = await User.findOne({ email });
+    console.log("Login attempt with:", email, password);
 
-    if (!admin || !(await bcrypt.compare(password, admin.password)) || admin.role !== 1) {
+    const admin = await User.findOne({ email });
+    if (!admin) {
+      console.log("Admin not found for email:", email);
+      return res.status(401).json({ error: "Invalid admin credentials" });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, admin.password);
+    console.log("Password valid:", isPasswordValid);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: "Invalid admin credentials" });
+    }
+
+    if (admin.role !== 1) {
+      console.log("User role is not admin:", admin.role);
       return res.status(401).json({ error: "Invalid admin credentials" });
     }
 
@@ -76,9 +90,11 @@ exports.adminLogin = async (req, res) => {
       },
     });
   } catch (err) {
+    console.error("Login error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
+
 exports.refresh = async (req, res) => {
   const { token } = req.body;
   if (!token) return res.sendStatus(401);

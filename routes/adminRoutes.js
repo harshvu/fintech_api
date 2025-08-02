@@ -2,25 +2,54 @@ const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/admin.controller');
 const auth = require("../middlewares/auth.middleware");
-/**
- * @route GET /api/admin/users
- * @desc Get all users
- * @access Admin
- */
-router.get('/users', auth,adminController.getAllUsers);
 
 /**
- * @route GET /api/admin/portfolios
- * @desc Get all user portfolios
- * @access Admin
+ * @swagger
+ * tags:
+ *   name: Admin
+ *   description: Admin API endpoints
  */
-router.get('/portfolios', auth,adminController.getAllUserPortfolios);
 
 /**
- * @route GET /api/admin/feedbacks
- * @desc Get all feedback
- * @access Admin
+ * @swagger
+ * /api/admin/users:
+ *   get:
+ *     summary: Get all users (active + inactive)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of users
  */
-router.get('/feedbacks',auth, adminController.getAllFeedback);
+router.get('/users', auth, adminController.getAllUsers);
+
+/**
+ * @swagger
+ * /api/admin/portfolios:
+ *   get:
+ *     summary: Get all user portfolios
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of portfolios
+ */
+router.get('/portfolios', auth, adminController.getAllUserPortfolios);
+
+/**
+ * @swagger
+ * /api/admin/feedbacks:
+ *   get:
+ *     summary: Get all feedback
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of feedback
+ */
+router.get('/feedbacks', auth, adminController.getAllFeedback);
 
 module.exports = router;
