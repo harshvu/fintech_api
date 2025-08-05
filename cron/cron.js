@@ -42,7 +42,7 @@ cron.schedule("15 9,11,13,15 * * 1-5", () => {
 }, { timezone: "Asia/Kolkata" });
 
 // ✅ Intra-Day Pre Validation — 10:50 AM (Mon–Fri)
-cron.schedule("20 9 * * 1-5", () => {
+cron.schedule("40 9 * * 1-5", () => {
   if (isMarketHoliday()) return console.log("📛 Skipping Intra-Day Validation (Pre): Market Holiday");
   const indiaTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
   console.log(`⏱️ Running: Intra-Day Validation at ${indiaTime.toLocaleTimeString("en-IN", { hour12: true })}`);

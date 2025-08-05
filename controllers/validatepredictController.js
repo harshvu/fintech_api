@@ -116,7 +116,7 @@ const validatepredictStocks = async (req, res) => {
         const overall_average = {
           averageAccuracy: average(entries.map(e => e.averageAccuracy)),
           avgPredictedGap: average(entries.map(e => e.avgPredictedGap)),
-          avgActualGap: average(entries.map(e => e.avgActualGap)),
+          avgActualGap: percentage(entries.map(e => e.avgActualGap)),
           openingRangeAccuracyRate: percentage(entries.map(e => e.openingRangeAccuracyRate)),
           supportLevelAccuracyRate: percentage(entries.map(e => e.supportLevelAccuracyRate)),
           resistanceLevelAccuracyRate: percentage(entries.map(e => e.resistanceLevelAccuracyRate))
@@ -125,7 +125,7 @@ const validatepredictStocks = async (req, res) => {
         const today_average = todayData ? {
           averageAccuracy: todayData.averageAccuracy || 0,
           avgPredictedGap: todayData.avgPredictedGap || 0,
-          avgActualGap: todayData.avgActualGap || 0,
+          avgActualGap: todayData.avgActualGap ? 100: 0,
           openingRangeAccuracyRate: todayData.openingRangeAccuracyRate ? 100 : 0,
           supportLevelAccuracyRate: todayData.supportLevelAccuracyRate ? 100 : 0,
           resistanceLevelAccuracyRate: todayData.resistanceLevelAccuracyRate ? 100 : 0
