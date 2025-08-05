@@ -60,7 +60,7 @@ const validatepredictStocks = async (req, res) => {
           recordCount: 1,
           averageAccuracy: data.overall_accuracy || 0,
           avgPredictedGap: data.predicted_gap_percentage || 0,
-          avgActualGap: data.direction_correct ? 1 : 0, // <== Based on your request
+          avgActualGap: data.direction_correct ? 100 : 0, // ✅ percentage
           directionAccuracyRate: data.direction_correct ? 1 : 0,
           openingRangeAccuracyRate: data.gap_type_correct ? 1 : 0,
           supportLevelAccuracyRate: data.support_level_accuracy ? 1 : 0,
@@ -116,7 +116,7 @@ const validatepredictStocks = async (req, res) => {
         const overall_average = {
           averageAccuracy: average(entries.map(e => e.averageAccuracy)),
           avgPredictedGap: percentage(entries.map(e => e.avgPredictedGap)),
-          avgActualGap: percentage(entries.map(e => e.avgActualGap)),
+          avgActualGap: percentage(entries.map(e => e.avgActualGap)), // ✅ corrected
           openingRangeAccuracyRate: percentage(entries.map(e => e.openingRangeAccuracyRate)),
           supportLevelAccuracyRate: percentage(entries.map(e => e.supportLevelAccuracyRate)),
           resistanceLevelAccuracyRate: percentage(entries.map(e => e.resistanceLevelAccuracyRate))
@@ -124,8 +124,8 @@ const validatepredictStocks = async (req, res) => {
 
         const today_average = todayData ? {
           averageAccuracy: todayData.averageAccuracy || 0,
-          avgPredictedGap: todayData.avgPredictedGap ? 100 :  0,
-          avgActualGap: todayData.avgActualGap ? 100: 0,
+          avgPredictedGap: todayData.avgPredictedGap || 0,
+          avgActualGap: todayData.avgActualGap || 0, // ✅ already percentage
           openingRangeAccuracyRate: todayData.openingRangeAccuracyRate ? 100 : 0,
           supportLevelAccuracyRate: todayData.supportLevelAccuracyRate ? 100 : 0,
           resistanceLevelAccuracyRate: todayData.resistanceLevelAccuracyRate ? 100 : 0
@@ -153,6 +153,7 @@ const validatepredictStocks = async (req, res) => {
     });
   }
 };
+
 
 // Utility functions
 
