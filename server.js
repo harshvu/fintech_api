@@ -19,9 +19,12 @@ process.on('unhandledRejection', (err) => {
 
 // ===== Middleware =====
 app.use(cors({
-  origin: 'https://nivesense.com', // replace with specific URL in production
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: [
+    "https://nivesense.com",
+    "http://localhost:3000"
+  ], // ✅ use array for multiple origins
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
 // ===== Connect to MongoDB =====
