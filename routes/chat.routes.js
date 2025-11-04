@@ -31,14 +31,19 @@ const auth = require("../middlewares/auth.middleware");
  *             properties:
  *               chatId:
  *                 type: string
+ *                 example: "abc123"
  *               question:
  *                 type: string
+ *                 example: "What is AI?"
  *               answer:
  *                 type: string
- *                core_conclusion:
+ *                 example: "AI is artificial intelligence."
+ *               core_conclusion:
  *                 type: string
- *              source_used:
+ *                 example: "AI automates decision-making"
+ *               source_used:
  *                 type: string
+ *                 example: "Wikipedia"
  *     responses:
  *       200:
  *         description: Chat saved successfully
