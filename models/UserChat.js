@@ -5,6 +5,8 @@ const userChatSchema = new mongoose.Schema({
   chatId: { type: String, required: true },
   question: { type: String, required: true },
   answer: { type: String, required: true },
+  core_conclusion: { type: String },
+  source_used: { type: String},
   createdAt: { type: Date, default: Date.now }
 });
 

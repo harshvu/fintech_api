@@ -35,6 +35,10 @@ const auth = require("../middlewares/auth.middleware");
  *                 type: string
  *               answer:
  *                 type: string
+ *                core_conclusion:
+ *                 type: string
+ *              source_used:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Chat saved successfully

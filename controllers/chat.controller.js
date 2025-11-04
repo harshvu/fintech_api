@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const UserChat = require("../models/UserChat");
 
 exports.saveChat = async (req, res) => {
-  const { chatId, question, answer } = req.body;
+  const { chatId, question, answer,core_conclusion,source_used } = req.body;
   const authHeader = req.headers.authorization;
   
       if (!authHeader) {
@@ -27,7 +27,9 @@ exports.saveChat = async (req, res) => {
       userId,
       chatId,
       question,
-      answer
+      answer,
+      core_conclusion,
+      source_used
     });
 
     await chat.save();
@@ -53,6 +55,9 @@ exports.getChatHistory = async (req, res) => {
             $push: {
               question: "$question",
               answer: "$answer",
+              core_conclusion:"$core_conclusion",
+              source_used:"$source_used",
+
               createdAt: "$createdAt"
             }
           },
