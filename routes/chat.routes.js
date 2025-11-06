@@ -44,6 +44,11 @@ const auth = require("../middlewares/auth.middleware");
  *               source_used:
  *                 type: string
  *                 example: "Wikipedia"
+ *               portfolio:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["TCS", "INFY", "SBIN"]
  *     responses:
  *       200:
  *         description: Chat saved successfully

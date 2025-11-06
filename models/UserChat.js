@@ -7,6 +7,7 @@ const userChatSchema = new mongoose.Schema({
   answer: { type: String, required: true },
   core_conclusion: { type: String },
   source_used: { type: String},
+  portfolio: { type: [String], default: [] },
   createdAt: { type: Date, default: Date.now }
 });
 
