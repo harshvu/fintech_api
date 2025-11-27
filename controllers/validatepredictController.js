@@ -155,7 +155,10 @@ const validatepredictStocks = async (req, res) => {
 
     return res.json({
       message: "✅ AI results saved successfully with weighted accuracy",
-      results
+      results,
+      rawResults,
+      aiResponse
+
     });
 
   } catch (error) {
