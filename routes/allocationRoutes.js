@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { allocateBudget } = require("../controllers/allocation.controller");
+const { allocateBudget } = require("../controllers/userAllocation");
 const authMiddleware = require("../middlewares/auth.middleware");
 
 /**
