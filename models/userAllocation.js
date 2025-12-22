@@ -10,11 +10,23 @@ const UserAllocationSchema = new Schema(
       index: true
     },
 
-    allocation_date: { type: String, required: true },
-    total_budget: { type: Number, required: true },
+    allocation_date: {
+      type: String,
+      required: true
+    },
 
-    risk_profile: String,
-    allocation_method: String,
+    total_budget: {
+      type: Number,
+      required: true
+    },
+
+    risk_profile: {
+      type: String
+    },
+
+    allocation_method: {
+      type: String
+    },
 
     strategy_level_allocation: {
       intraday: {
@@ -34,20 +46,11 @@ const UserAllocationSchema = new Schema(
       }
     },
 
+    // ✅ FIXED: Object instead of Map
     stock_allocations: {
-      type: Map,
-      of: new Schema(
-        {
-          amount: Number,
-          percentage: Number,
-          category: String,
-          current_price: Number,
-          atr_percent: Number,
-          score: Number,
-          approximate_shares: Number
-        },
-        { _id: false }
-      )
+      type: Object,
+      required: true,
+      default: {}
     },
 
     summary: {

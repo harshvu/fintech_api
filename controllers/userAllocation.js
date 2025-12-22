@@ -1,7 +1,7 @@
 const User = require("../models/user.model");
 const UserStockPortfolio = require("../models/stockPortfolio.model");
-const UserAllocation = require("../models/userAllocation");
-const { sendToAIAllocationModel } = require("../services/aiAllocation");
+const UserAllocation = require("../models/userAllocation.model");
+const { sendToAIAllocationModel } = require("../services/aiAllocation.service");
 
 const allocateBudget = async (req, res) => {
   try {
@@ -28,19 +28,22 @@ const allocateBudget = async (req, res) => {
       });
     }
 
+    // 3️⃣ Prepare AI payload
     const payload = {
       ticker: stocks.map(s => s.stockName.toUpperCase()),
       total_budget: user.total_budget
     };
 
-    // 3️⃣ Call AI
+    // 4️⃣ Call AI
     const aiResponse = await sendToAIAllocationModel(payload);
 
     if (!aiResponse || !aiResponse.stock_allocations) {
-      return res.status(500).json({ message: "Invalid AI response" });
+      return res.status(500).json({
+        message: "Invalid AI response"
+      });
     }
 
-    // 4️⃣ Save allocation
+    // 5️⃣ Save allocation (NO Map conversion needed)
     const allocation = await UserAllocation.create({
       userId,
       allocation_date: aiResponse.allocation_date,
@@ -58,7 +61,7 @@ const allocateBudget = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("❌ Allocation Error:", error.message);
+    console.error("❌ Allocation Error:", error);
     return res.status(500).json({
       message: "Allocation failed",
       error: error.message
