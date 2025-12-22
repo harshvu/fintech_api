@@ -81,6 +81,6 @@ const authMiddleware = require("../middlewares/auth.middleware");
  *       500:
  *         description: Allocation failed
  */
-router.post("/", authMiddleware, allocateBudget);
+router.post("/allocate", authMiddleware, allocateBudget);
 
 module.exports = router;
