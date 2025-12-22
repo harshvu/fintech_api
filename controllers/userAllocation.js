@@ -1,7 +1,7 @@
 const User = require("../models/user.model");
 const UserStockPortfolio = require("../models/stockPortfolio.model");
-const UserAllocation = require("../models/userAllocation.model");
-const { sendToAIAllocationModel } = require("../services/aiAllocation.service");
+const UserAllocation = require("../models/userAllocation");
+const { sendToAIAllocationModel } = require("../services/aiAllocation");
 
 const allocateBudget = async (req, res) => {
   try {
