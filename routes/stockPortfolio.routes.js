@@ -85,8 +85,7 @@ router.delete('/:id', auth, stockCtrl.deleteStockById);
  *   put:
  *     summary: Update logged-in user's budget
  *     description: Update total budget using JWT token
- *     tags:
- *       - User
+ *     tags: [Portfolio]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
