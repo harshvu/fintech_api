@@ -79,4 +79,42 @@ router.post('/add', auth, stockCtrl.addStocksToPortfolio);
  *         description: Stock not found
  */
 router.delete('/:id', auth, stockCtrl.deleteStockById);
+/**
+ * @swagger
+ * /api/portfolio/update-budget:
+ *   put:
+ *     summary: Update logged-in user's budget
+ *     description: Update total budget using JWT token
+ *     tags:
+ *       - User
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - total_budget
+ *             properties:
+ *               total_budget:
+ *                 type: number
+ *                 example: 10000
+ *     responses:
+ *       200:
+ *         description: Budget updated successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.put(
+  "/update-budget",
+  auth,
+  stockCtrl.updateUserBudget
+);
+
 module.exports = router;

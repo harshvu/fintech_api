@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const UserStockPortfolio = require('../models/stockPortfolio.model');
-
+const User = require("../models/user.model");
 exports.addStocksToPortfolio = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -92,5 +92,61 @@ exports.deleteStockById = async (req, res) => {
   } catch (error) {
     console.error('Delete stock error:', error.message);
     return res.status(500).json({ error: 'Failed to delete stock', details: error.message });
+  }
+};
+exports.updateUserBudget = async (req, res) => {
+  try {
+    // 🔐 Extract token manually
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+      return res.status(401).json({ error: "Authorization token missing" });
+    }
+
+    const token = authHeader.startsWith("Bearer ")
+      ? authHeader.split(" ")[1]
+      : authHeader;
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id || decoded._id;
+
+    if (!userId) {
+      return res.status(401).json({
+        error: "Invalid token: user ID missing"
+      });
+    }
+
+    const { total_budget } = req.body;
+
+    if (total_budget === undefined || total_budget <= 0) {
+      return res.status(400).json({
+        message: "total_budget must be a positive number"
+      });
+    }
+
+    // 💾 Update user budget
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { total_budget },
+      { new: true }
+    ).select("total_budget");
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found"
+      });
+    }
+
+    return res.json({
+      message: "✅ Budget updated successfully",
+      total_budget: user.total_budget
+    });
+
+  } catch (error) {
+    console.error("❌ Update Budget Error:", error);
+    return res.status(500).json({
+      message: "Failed to update budget",
+      error: error.message
+    });
   }
 };

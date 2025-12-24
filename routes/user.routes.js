@@ -49,8 +49,7 @@ router.get('/', auth, userCtrl.getUsers);
  *                 type: string
  *               password:
  *                 type: string
- *               total_budget:
- *                 type: Number
+ *               
  *     responses:
  *       200:
  *         description: User updated

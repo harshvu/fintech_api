@@ -1,14 +1,16 @@
 const User = require("../models/user.model");
 const UserStockPortfolio = require("../models/stockPortfolio.model");
 const UserAllocation = require("../models/userAllocation");
+const UserAIAnalysis = require("../models/UserAllocationAnalysis");
 const {
   sendToAIAllocationModel,
-  sendBatchToInitializeAI
+  sendBatchToInitializeAI,
+  callBatchAnalyzeAI 
 } = require("../services/aiAllocation");
 
 const allocateBudgetBatch = async (req, res) => {
   try {
-    // 1️⃣ Get stocks grouped by user
+    // 1️⃣ Group stocks user-wise from portfolio
     const userStockGroups = await UserStockPortfolio.aggregate([
       {
         $group: {
@@ -24,12 +26,12 @@ const allocateBudgetBatch = async (req, res) => {
 
     const batchUsersPayload = [];
 
-    // 2️⃣ Loop user-wise
+    // 2️⃣ Loop per user
     for (const userGroup of userStockGroups) {
       const userId = userGroup._id;
-      const userStocks = userGroup.stocks.map(s => s.toUpperCase());
+      const userStocks = userGroup.stocks.map(s => s.toUpperCase()).sort();
 
-      // 3️⃣ Get user budget
+      // 3️⃣ Fetch user budget
       const user = await User.findById(userId).select("total_budget");
 
       if (!user || user.total_budget <= 0) {
@@ -37,13 +39,32 @@ const allocateBudgetBatch = async (req, res) => {
         continue;
       }
 
-      // 4️⃣ Prepare AI allocation payload
+      // 4️⃣ Fetch last allocation (if exists)
+      const existingAllocation = await UserAllocation.findOne({ userId })
+        .sort({ createdAt: -1 })
+        .select("userStocks");
+
+      // 5️⃣ Compare stocks (skip AI if no change)
+      if (existingAllocation?.userStocks?.length) {
+        const prevStocks = [...existingAllocation.userStocks].sort();
+
+        const isSameStocks =
+          prevStocks.length === userStocks.length &&
+          prevStocks.every((s, i) => s === userStocks[i]);
+
+        if (isSameStocks) {
+          console.log(`⏭️ Skipping AI call for user ${userId} (stocks unchanged)`);
+          continue;
+        }
+      }
+
+      // 6️⃣ Prepare AI payload
       const aiPayload = {
         ticker: userStocks,
         total_budget: user.total_budget
       };
 
-      // 5️⃣ Call AI allocation
+      // 7️⃣ Call AI allocation
       const aiResponse = await sendToAIAllocationModel(aiPayload);
 
       if (!aiResponse || !aiResponse.stock_allocations) {
@@ -51,8 +72,7 @@ const allocateBudgetBatch = async (req, res) => {
         continue;
       }
 
-      // 6️⃣ Save allocation to DB
-      const allocationDoc = await UserAllocation.create({
+      const allocationData = {
         userId,
         userStocks,
         allocation_date: aiResponse.allocation_date,
@@ -62,9 +82,18 @@ const allocateBudgetBatch = async (req, res) => {
         strategy_level_allocation: aiResponse.strategy_level_allocation,
         stock_allocations: aiResponse.stock_allocations,
         summary: aiResponse.summary
-      });
+      };
 
-      // 7️⃣ Prepare batch payload
+      // 8️⃣ UPDATE if exists else CREATE
+      const allocationDoc = existingAllocation
+        ? await UserAllocation.findOneAndUpdate(
+            { userId },
+            { $set: allocationData },
+            { new: true }
+          )
+        : await UserAllocation.create(allocationData);
+
+      // 9️⃣ Prepare batch payload
       batchUsersPayload.push({
         user_id: userId.toString(),
         portfolio: {
@@ -81,11 +110,11 @@ const allocateBudgetBatch = async (req, res) => {
 
     if (!batchUsersPayload.length) {
       return res.status(400).json({
-        message: "No valid users processed"
+        message: "No valid users processed (no stock changes detected)"
       });
     }
 
-    // 8️⃣ Send batch payload to FINAL AI API
+    // 🔟 Send batch payload to FINAL AI API
     const batchPayload = {
       users: batchUsersPayload
     };
@@ -106,7 +135,123 @@ const allocateBudgetBatch = async (req, res) => {
     });
   }
 };
+const runUserAIAnalysisBatch = async (req, res) => {
+  try {
+    const { user_ids } = req.body;
+
+    if (!Array.isArray(user_ids) || !user_ids.length) {
+      return res.status(400).json({
+        message: "user_ids array is required"
+      });
+    }
+
+    // 1️⃣ Call AI batch API
+    const aiBatchResponse = await callBatchAnalyzeAI(user_ids);
+
+    if (!aiBatchResponse?.results?.length) {
+      return res.status(400).json({
+        message: "Invalid AI response"
+      });
+    }
+
+    let processed = 0;
+
+    // 2️⃣ Save user-wise AI data
+    for (const item of aiBatchResponse.results) {
+      if (item.status !== "success" || !item.result) continue;
+
+      const userId = item.user_id;
+      const result = item.result;
+
+      const payload = {
+        userId,
+        ai_status: result.status,
+        market_status: result.market_status,
+        workflow_status: result.workflow_status,
+        ai_signals: result.ai_signals || [],
+        actions: result.actions || [],
+        current_positions: result.current_positions || [],
+        trade_history: result.trade_history || [],
+        portfolio_summary: result.portfolio_summary || {},
+        messages: result.messages || [],
+        last_ai_timestamp: result.timestamp
+      };
+
+      // 3️⃣ UPSERT (update if exists, else insert)
+      await UserAIAnalysis.findOneAndUpdate(
+        { userId },
+        { $set: payload },
+        { upsert: true, new: true }
+      );
+
+      processed++;
+    }
+
+    return res.json({
+      message: "✅ AI analysis saved successfully",
+      total_users: aiBatchResponse.total_users,
+      success_count: processed,
+      failure_count: aiBatchResponse.failure_count
+    });
+
+  } catch (error) {
+    console.error("❌ AI Analysis Error:", error);
+    return res.status(500).json({
+      message: "AI batch analysis failed",
+      error: error.message
+    });
+  }
+};
+
+const getUserAnalyzeResult = async (req, res) => {
+  try {
+    // 🔐 Extract token manually (as requested)
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+      return res.status(401).json({ error: "Authorization token missing" });
+    }
+
+    const token = authHeader.startsWith("Bearer ")
+      ? authHeader.split(" ")[1]
+      : authHeader;
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id || decoded._id;
+
+    if (!userId) {
+      return res.status(401).json({
+        error: "Invalid token: user ID missing"
+      });
+    }
+
+    // 📦 Fetch latest AI analysis for user
+    const analysis = await UserAIAnalysis.findOne({ userId })
+      .sort({ createdAt: -1 });
+
+    if (!analysis) {
+      return res.status(404).json({
+        message: "No AI analysis found for user"
+      });
+    }
+
+    return res.json({
+      message: "✅ User AI analysis fetched",
+      data: analysis
+    });
+
+  } catch (error) {
+    console.error("❌ Get Analyze Error:", error);
+    return res.status(500).json({
+      message: "Failed to fetch analysis",
+      error: error.message
+    });
+  }
+};
+
 
 module.exports = {
-  allocateBudgetBatch
+  allocateBudgetBatch,
+  runUserAIAnalysisBatch,
+  getUserAnalyzeResult
 };
