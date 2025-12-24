@@ -17,53 +17,16 @@ const { allocateBudgetBatch,runUserAIAnalysisBatch,getUserAnalyzeResult } = requ
 router.post("/allocate/batch", allocateBudgetBatch);
 /**
  * @swagger
- * /api/user-allocation/ai/analyze/batch:
+ * /api/ai/analyze/batch:
  *   post:
- *     summary: Run AI analysis for multiple users (Batch)
- *     description: >
- *       Calls AI analyze batch API and stores AI signals user-wise.
- *       If user data already exists, it will be updated; otherwise inserted.
+ *     summary: Run AI batch analysis for all allocated users
  *     tags:
  *       - AI Analysis
  *     security:
  *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - user_ids
- *             properties:
- *               user_ids:
- *                 type: array
- *                 items:
- *                   type: string
- *                 example:
- *                   - "6880b12dba98cbdd998b5a2a"
  *     responses:
  *       200:
- *         description: AI analysis completed successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: AI analysis saved successfully
- *                 total_users:
- *                   type: number
- *                   example: 1
- *                 success_count:
- *                   type: number
- *                   example: 1
- *                 failure_count:
- *                   type: number
- *                   example: 0
- *       400:
- *         description: Invalid request payload
+ *         description: AI analysis executed successfully
  *       401:
  *         description: Unauthorized
  *       500:
