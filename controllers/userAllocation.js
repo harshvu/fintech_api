@@ -137,16 +137,20 @@ const allocateBudgetBatch = async (req, res) => {
 };
 const runUserAIAnalysisBatch = async (req, res) => {
   try {
-    const { user_ids } = req.body;
+    // 1️⃣ Get DISTINCT userIds from UserAllocation
+    const userIds = await UserAllocation.distinct("userId");
 
-    if (!Array.isArray(user_ids) || !user_ids.length) {
+    if (!userIds.length) {
       return res.status(400).json({
-        message: "user_ids array is required"
+        message: "No users found in allocation table"
       });
     }
 
-    // 1️⃣ Call AI batch API
-    const aiBatchResponse = await callBatchAnalyzeAI(user_ids);
+    // Convert ObjectIds → strings (AI expects strings)
+    const userIdStrings = userIds.map(id => id.toString());
+
+    // 2️⃣ Call AI batch analyze API
+    const aiBatchResponse = await callBatchAnalyzeAI(userIdStrings);
 
     if (!aiBatchResponse?.results?.length) {
       return res.status(400).json({
@@ -156,7 +160,7 @@ const runUserAIAnalysisBatch = async (req, res) => {
 
     let processed = 0;
 
-    // 2️⃣ Save user-wise AI data
+    // 3️⃣ Save AI result user-wise (UPSERT)
     for (const item of aiBatchResponse.results) {
       if (item.status !== "success" || !item.result) continue;
 
@@ -177,7 +181,6 @@ const runUserAIAnalysisBatch = async (req, res) => {
         last_ai_timestamp: result.timestamp
       };
 
-      // 3️⃣ UPSERT (update if exists, else insert)
       await UserAIAnalysis.findOneAndUpdate(
         { userId },
         { $set: payload },
@@ -188,14 +191,14 @@ const runUserAIAnalysisBatch = async (req, res) => {
     }
 
     return res.json({
-      message: "✅ AI analysis saved successfully",
-      total_users: aiBatchResponse.total_users,
+      message: "✅ AI batch analysis completed",
+      total_users: userIdStrings.length,
       success_count: processed,
-      failure_count: aiBatchResponse.failure_count
+      failure_count: aiBatchResponse.failure_count || 0
     });
 
   } catch (error) {
-    console.error("❌ AI Analysis Error:", error);
+    console.error("❌ AI Analysis Batch Error:", error);
     return res.status(500).json({
       message: "AI batch analysis failed",
       error: error.message
