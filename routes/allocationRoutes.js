@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { allocateBudgetBatch } = require("../controllers/userAllocation");
+const { allocateBudgetBatch,runUserAIAnalysisBatch,getUserAnalyzeResult } = require("../controllers/userAllocation");
 
 /**
  * @swagger
