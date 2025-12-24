@@ -17,7 +17,7 @@ const { allocateBudgetBatch,runUserAIAnalysisBatch,getUserAnalyzeResult } = requ
 router.post("/allocate/batch", allocateBudgetBatch);
 /**
  * @swagger
- * /api/ai/analyze/batch:
+ * /api/allocation/analyze/batch:
  *   post:
  *     summary: Run AI batch analysis for all allocated users
  *     tags:
@@ -33,12 +33,12 @@ router.post("/allocate/batch", allocateBudgetBatch);
  *         description: Internal server error
  */
 router.post(
-  "/ai/analyze/batch",
+  "/analyze/batch",
   runUserAIAnalysisBatch
 );
 /**
  * @swagger
- * /api/user-allocation/ai/analyze/batch/user:
+ * /api/allocation/byUser:
  *   get:
  *     summary: Get AI analyze batch result for logged-in user
  *     description: >
@@ -58,7 +58,7 @@ router.post(
  *         description: Server error
  */
 router.get(
-  "/ai/analyze/batch/user",
+  "/byUser",
   getUserAnalyzeResult
 );
 module.exports = router;
