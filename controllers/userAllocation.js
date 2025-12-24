@@ -1,72 +1,112 @@
 const User = require("../models/user.model");
 const UserStockPortfolio = require("../models/stockPortfolio.model");
 const UserAllocation = require("../models/userAllocation");
-const { sendToAIAllocationModel } = require("../services/aiAllocation");
+const {
+  sendToAIAllocationModel,
+  sendBatchToInitializeAI
+} = require("../services/aiAllocation");
 
-const allocateBudget = async (req, res) => {
+const allocateBudgetBatch = async (req, res) => {
   try {
-    const userId = req.user.id;
+    // 1️⃣ Get stocks grouped by user
+    const userStockGroups = await UserStockPortfolio.aggregate([
+      {
+        $group: {
+          _id: "$userId",
+          stocks: { $addToSet: "$stockName" }
+        }
+      }
+    ]);
 
-    // 1️⃣ Get budget from USERS table
-    const user = await User.findById(userId).select("total_budget");
+    if (!userStockGroups.length) {
+      return res.status(400).json({ message: "No user portfolios found" });
+    }
 
-    if (!user || user.total_budget <= 0) {
-      return res.status(400).json({
-        message: "User budget not configured"
+    const batchUsersPayload = [];
+
+    // 2️⃣ Loop user-wise
+    for (const userGroup of userStockGroups) {
+      const userId = userGroup._id;
+      const userStocks = userGroup.stocks.map(s => s.toUpperCase());
+
+      // 3️⃣ Get user budget
+      const user = await User.findById(userId).select("total_budget");
+
+      if (!user || user.total_budget <= 0) {
+        console.warn(`⚠️ Skipping user ${userId} (invalid budget)`);
+        continue;
+      }
+
+      // 4️⃣ Prepare AI allocation payload
+      const aiPayload = {
+        ticker: userStocks,
+        total_budget: user.total_budget
+      };
+
+      // 5️⃣ Call AI allocation
+      const aiResponse = await sendToAIAllocationModel(aiPayload);
+
+      if (!aiResponse || !aiResponse.stock_allocations) {
+        console.warn(`⚠️ Invalid AI response for user ${userId}`);
+        continue;
+      }
+
+      // 6️⃣ Save allocation to DB
+      const allocationDoc = await UserAllocation.create({
+        userId,
+        userStocks,
+        allocation_date: aiResponse.allocation_date,
+        total_budget: aiResponse.total_budget,
+        risk_profile: aiResponse.risk_profile,
+        allocation_method: aiResponse.allocation_method,
+        strategy_level_allocation: aiResponse.strategy_level_allocation,
+        stock_allocations: aiResponse.stock_allocations,
+        summary: aiResponse.summary
+      });
+
+      // 7️⃣ Prepare batch payload
+      batchUsersPayload.push({
+        user_id: userId.toString(),
+        portfolio: {
+          allocation_date: allocationDoc.allocation_date,
+          total_budget: allocationDoc.total_budget,
+          risk_profile: allocationDoc.risk_profile,
+          allocation_method: allocationDoc.allocation_method,
+          strategy_level_allocation: allocationDoc.strategy_level_allocation,
+          stock_allocations: allocationDoc.stock_allocations,
+          summary: allocationDoc.summary
+        }
       });
     }
 
-    // 2️⃣ Get user stocks
-    const stocks = await UserStockPortfolio.find(
-      { userId },
-      { stockName: 1, _id: 0 }
-    );
-
-    if (!stocks.length) {
+    if (!batchUsersPayload.length) {
       return res.status(400).json({
-        message: "User has no stocks"
+        message: "No valid users processed"
       });
     }
 
-    // 3️⃣ Prepare AI payload
-    const payload = {
-      ticker: stocks.map(s => s.stockName.toUpperCase()),
-      total_budget: user.total_budget
+    // 8️⃣ Send batch payload to FINAL AI API
+    const batchPayload = {
+      users: batchUsersPayload
     };
 
-    // 4️⃣ Call AI
-    const aiResponse = await sendToAIAllocationModel(payload);
-
-    if (!aiResponse || !aiResponse.stock_allocations) {
-      return res.status(500).json({
-        message: "Invalid AI response"
-      });
-    }
-
-    // 5️⃣ Save allocation (NO Map conversion needed)
-    const allocation = await UserAllocation.create({
-      userId,
-      allocation_date: aiResponse.allocation_date,
-      total_budget: aiResponse.total_budget,
-      risk_profile: aiResponse.risk_profile,
-      allocation_method: aiResponse.allocation_method,
-      strategy_level_allocation: aiResponse.strategy_level_allocation,
-      stock_allocations: aiResponse.stock_allocations,
-      summary: aiResponse.summary
-    });
+    const batchResponse = await sendBatchToInitializeAI(batchPayload);
 
     return res.json({
-      message: "✅ Allocation generated & saved",
-      data: allocation
+      message: "✅ Batch allocation completed",
+      users_processed: batchUsersPayload.length,
+      batch_ai_response: batchResponse
     });
 
   } catch (error) {
-    console.error("❌ Allocation Error:", error);
+    console.error("❌ Batch Allocation Error:", error);
     return res.status(500).json({
-      message: "Allocation failed",
+      message: "Batch allocation failed",
       error: error.message
     });
   }
 };
 
-module.exports = { allocateBudget };
+module.exports = {
+  allocateBudgetBatch
+};

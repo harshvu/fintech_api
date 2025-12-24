@@ -10,6 +10,13 @@ const UserAllocationSchema = new Schema(
       index: true
     },
 
+    // ✅ NEW: Store user's stocks at allocation time
+    userStocks: {
+      type: [String],
+      required: true,
+      index: true
+    },
+
     allocation_date: {
       type: String,
       required: true
@@ -46,7 +53,6 @@ const UserAllocationSchema = new Schema(
       }
     },
 
-    // ✅ FIXED: Object instead of Map
     stock_allocations: {
       type: Object,
       required: true,
@@ -64,5 +70,8 @@ const UserAllocationSchema = new Schema(
   },
   { timestamps: true }
 );
+
+// 🔥 Optional but recommended compound index
+UserAllocationSchema.index({ userId: 1, allocation_date: 1 });
 
 module.exports = mongoose.model("UserAllocation", UserAllocationSchema);
