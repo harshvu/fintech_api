@@ -123,6 +123,7 @@ const allocateBudgetBatch = async (req, res) => {
 
     return res.json({
       message: "✅ Batch allocation completed",
+      batchPayload:batchPayload,
       users_processed: batchUsersPayload.length,
       batch_ai_response: batchResponse
     });
