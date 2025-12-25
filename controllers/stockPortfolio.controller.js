@@ -52,28 +52,42 @@ exports.addStocksToPortfolio = async (req, res) => {
 exports.getUserStocks = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-  
-      if (!authHeader) {
-        return res.status(401).json({ error: 'Authorization token missing' });
-      }
-  
-      // Extract token (whether it's with or without "Bearer")
-      let token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
-  
-      // Decode token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const userId = decoded.id || decoded._id;
-  
-      if (!userId) {
-        return res.status(401).json({ error: 'Invalid token: user ID missing' });
-      }
-    
+
+    if (!authHeader) {
+      return res.status(401).json({ error: "Authorization token missing" });
+    }
+
+    const token = authHeader.startsWith("Bearer ")
+      ? authHeader.split(" ")[1]
+      : authHeader;
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id || decoded._id;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Invalid token: user ID missing" });
+    }
+
+    // 1️⃣ Get stocks
     const stocks = await UserStockPortfolio.find({ userId });
-    res.json(stocks);
-  } catch (err) {
-    res.status(500).json({ error: 'Error fetching stocks' });
+
+    // 2️⃣ Get total budget from User table
+    const user = await User.findById(userId).select("total_budget");
+
+    // ✅ Order matters here
+    return res.json({
+      stocks,
+      total_budget: user?.total_budget || 0
+    });
+
+  } catch (error) {
+    console.error("❌ Get User Stocks Error:", error);
+    return res.status(500).json({
+      error: "Error fetching stocks"
+    });
   }
 };
+
 exports.deleteStockById = async (req, res) => {
   try {
     const { id } = req.params;

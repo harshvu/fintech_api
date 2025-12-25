@@ -41,16 +41,26 @@ const UserAIAnalysisSchema = new Schema(
     trade_history: { type: Array, default: [] },
 
     portfolio_summary: {
-      total_value: Number,
-      cash_balance: Number,
-      invested_amount: Number,
-      total_pnl: Number,
-      pnl_percent: Number,
-      open_positions: Number,
-      actions_taken: Number,
-      win_count: Number,
-      loss_count: Number,
-      win_rate: Number
+      total_value: { type: Number, default: 0 },
+      cash_balance: { type: Number, default: 0 },
+      invested_amount: { type: Number, default: 0 },
+      total_pnl: { type: Number, default: 0 },
+      pnl_percent: { type: Number, default: 0 },
+      open_positions: { type: Number, default: 0 },
+      actions_taken: { type: Number, default: 0 },
+      win_count: { type: Number, default: 0 },
+      loss_count: { type: Number, default: 0 },
+      win_rate: { type: Number, default: 0 },
+
+      // ✅ NEW FIELDS
+      allocated_budget: { type: Number, default: 0 },
+      available_to_trade: { type: Number, default: 0 },
+
+      // ✅ Dynamic per-stock allocation
+      stock_budget_allocations: {
+        type: Object,
+        default: {}
+      }
     },
 
     messages: { type: Array, default: [] },

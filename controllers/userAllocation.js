@@ -1,3 +1,4 @@
+const jwt = require('jsonwebtoken');
 const User = require("../models/user.model");
 const UserStockPortfolio = require("../models/stockPortfolio.model");
 const UserAllocation = require("../models/userAllocation");
