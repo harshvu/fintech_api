@@ -58,7 +58,11 @@ const UserAllocationSchema = new Schema(
       required: true,
       default: {}
     },
-
+    invested_amount_per_stock: {
+      type: Object,
+      required: true,
+      default: {}
+    },
     summary: {
       total_allocated: Number,
       cash_remaining: Number,
