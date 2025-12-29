@@ -82,6 +82,7 @@ const allocateBudgetBatch = async (req, res) => {
         allocation_method: aiResponse.allocation_method,
         strategy_level_allocation: aiResponse.strategy_level_allocation,
         stock_allocations: aiResponse.stock_allocations,
+        invested_amount_per_stock:aiResponse.invested_amount_per_stock,
         summary: aiResponse.summary
       };
 
