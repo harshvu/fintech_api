@@ -60,6 +60,10 @@ const UserAIAnalysisSchema = new Schema(
       stock_budget_allocations: {
         type: Object,
         default: {}
+      },
+      invested_amount_per_stock: {
+        type: Object,
+        default: {}
       }
     },
 

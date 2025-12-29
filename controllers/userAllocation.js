@@ -178,7 +178,6 @@ const runUserAIAnalysisBatch = async (req, res) => {
         actions: result.actions || [],
         current_positions: result.current_positions || [],
         trade_history: result.trade_history || [],
-        invested_amount_per_stock:result.invested_amount_per_stock || [],
         portfolio_summary: result.portfolio_summary || {},
         messages: result.messages || [],
         last_ai_timestamp: result.timestamp
