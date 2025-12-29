@@ -7,12 +7,9 @@ const { predictStocks: DailyUpdates } = require("../controllers/DailyUpdatesCont
 const { predictStocks: NewsUpdates } = require("../controllers/newsUpdatesController");
 const isMarketHoliday = require("../utils/isMarketHoliday");
 const {
-  allocateBudgetBatch
-} = require("../controllers/allocation.controller");
-
-const {
+  allocateBudgetBatch,
   runUserAIAnalysisBatch
-} = require("../controllers/userAIAnalysis.controller");
+} = require("../controllers/userAllocation");
 const mockRes = {
   json: (data) => console.log("✅ Cron success:", data),
   status: (code) => ({
