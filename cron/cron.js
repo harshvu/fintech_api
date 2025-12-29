@@ -6,7 +6,13 @@ const { validatepredictStocks: validatepredictStocksIn } = require("../controlle
 const { predictStocks: DailyUpdates } = require("../controllers/DailyUpdatesController");
 const { predictStocks: NewsUpdates } = require("../controllers/newsUpdatesController");
 const isMarketHoliday = require("../utils/isMarketHoliday");
+const {
+  allocateBudgetBatch
+} = require("../controllers/allocation.controller");
 
+const {
+  runUserAIAnalysisBatch
+} = require("../controllers/userAIAnalysis.controller");
 const mockRes = {
   json: (data) => console.log("✅ Cron success:", data),
   status: (code) => ({
@@ -23,7 +29,11 @@ const runValidatePredictPre = () => validatepredictStocksPre(reqMock, mockRes);
 const runValidatePredictIn = () => validatepredictStocksIn(reqMock, mockRes);
 const runDailyUpdates = () => DailyUpdates(reqMock, mockRes);
 const runNewsUpdates = () => NewsUpdates(reqMock, mockRes);
+const runAllocateBudgetBatch = () =>
+  allocateBudgetBatch(reqMock, mockRes);
 
+const runUserAIAnalysisBatchCron = () =>
+  runUserAIAnalysisBatch(reqMock, mockRes);
 // --- Cron Schedules ---
 
 // 🕗 Pre-Market Prediction — 8:20 AM (Mon–Fri)
@@ -89,5 +99,58 @@ cron.schedule("0 7-15 * * 1-5", () => {
 
   console.log(`📰 Running: News Updates at ${indiaTime.toLocaleTimeString("en-IN", { hour12: true })}`);
   runNewsUpdates();
+}, { timezone: "Asia/Kolkata" });
+
+cron.schedule("30 20 * * 1-5", () => {
+  if (isMarketHoliday()) {
+    console.log("📛 Skipping Budget Allocation: Market Holiday");
+    return;
+  }
+
+  console.log("⏱️ Running: Budget Allocation Batch (8:30 PM)");
+  runAllocateBudgetBatch();
+
+}, { timezone: "Asia/Kolkata" });
+cron.schedule("30 8 * * 1-5", () => {
+  if (isMarketHoliday()) {
+    console.log("📛 Skipping Budget Allocation: Market Holiday");
+    return;
+  }
+
+  console.log("⏱️ Running: Budget Allocation Batch (8:30 AM)");
+  runAllocateBudgetBatch();
+
+}, { timezone: "Asia/Kolkata" });
+
+// 💰 Allocate Budget Batch — Every 5 minutes (Mon–Fri)
+cron.schedule("*/5 * * * 1-5", () => {
+  if (isMarketHoliday()) {
+    console.log("📛 Skipping AI Analysis: Market Holiday");
+    return;
+  }
+
+  // Get current IST time
+  const now = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+  );
+
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+
+  // ⏰ Allow only between 09:30 AM and 03:30 PM
+  const isAfterStart = hours > 9 || (hours === 9 && minutes >= 30);
+  const isBeforeEnd = hours < 15 || (hours === 15 && minutes <= 30);
+
+  if (!isAfterStart || !isBeforeEnd) {
+    console.log("⏱️ Skipping AI Analysis: Outside Market Hours");
+    return;
+  }
+
+  console.log(
+    `🤖 Running AI Analysis Batch at ${now.toLocaleTimeString("en-IN", { hour12: true })}`
+  );
+
+  runUserAIAnalysisBatchCron();
+
 }, { timezone: "Asia/Kolkata" });
 
