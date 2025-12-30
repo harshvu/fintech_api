@@ -120,34 +120,34 @@ cron.schedule("30 8 * * 1-5", () => {
 }, { timezone: "Asia/Kolkata" });
 
 // 💰 Allocate Budget Batch — Every 5 minutes (Mon–Fri)
-// cron.schedule("*/5 * * * 1-5", () => {
-//   if (isMarketHoliday()) {
-//     console.log("📛 Skipping AI Analysis: Market Holiday");
-//     return;
-//   }
+cron.schedule("*/5 * * * 1-5", () => {
+  if (isMarketHoliday()) {
+    console.log("📛 Skipping AI Analysis: Market Holiday");
+    return;
+  }
 
-//   // Get current IST time
-//   const now = new Date(
-//     new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
-//   );
+  // Get current IST time
+  const now = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+  );
 
-//   const hours = now.getHours();
-//   const minutes = now.getMinutes();
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
 
-//   // ⏰ Allow only between 09:30 AM and 03:30 PM
-//   const isAfterStart = hours > 9 || (hours === 9 && minutes >= 30);
-//   const isBeforeEnd = hours < 15 || (hours === 15 && minutes <= 30);
+  // ⏰ Allow only between 09:30 AM and 03:30 PM
+  const isAfterStart = hours > 9 || (hours === 9 && minutes >= 15);
+  const isBeforeEnd = hours < 15 || (hours === 15 && minutes <= 30);
 
-//   if (!isAfterStart || !isBeforeEnd) {
-//     console.log("⏱️ Skipping AI Analysis: Outside Market Hours");
-//     return;
-//   }
+  if (!isAfterStart || !isBeforeEnd) {
+    console.log("⏱️ Skipping AI Analysis: Outside Market Hours");
+    return;
+  }
 
-//   console.log(
-//     `🤖 Running AI Analysis Batch at ${now.toLocaleTimeString("en-IN", { hour12: true })}`
-//   );
+  console.log(
+    `🤖 Running AI Analysis Batch at ${now.toLocaleTimeString("en-IN", { hour12: true })}`
+  );
 
-//   runUserAIAnalysisBatchCron();
+  runUserAIAnalysisBatchCron();
 
-// }, { timezone: "Asia/Kolkata" });
+}, { timezone: "Asia/Kolkata" });
 
