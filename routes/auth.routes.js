@@ -44,6 +44,33 @@ const authCtrl = require('../controllers/auth.controller');
  *         description: User registered successfully
  */
 router.post('/signup', authCtrl.signup);
+/**
+ * @swagger
+ * /api/auth/verify-email:
+ *   post:
+ *     summary: Verify email using OTP code
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - code
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: user@gmail.com
+ *               code:
+ *                 type: string
+ *                 example: 123456
+ *     responses:
+ *       200:
+ *         description: Email verified successfully
+ */
+router.post('/verify-email', authCtrl.verifyEmail);
 
 /**
  * @swagger
