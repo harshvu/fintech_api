@@ -41,7 +41,9 @@ exports.signup = async (req, res) => {
     await sendVerificationEmail(email, verificationCode);
 
     res.json({
+      email: email,
       message: "Signup successful. Please verify your email."
+
     });
 
   } catch (err) {

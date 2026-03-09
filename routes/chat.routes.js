@@ -88,5 +88,17 @@ router.get("/history", auth, chatCtrl.getChatHistory);
  *         description: Chat messages for the specified chat ID
  */
 router.get("/:chatId", auth, chatCtrl.getChatById);
-
+/**
+ * @swagger
+ * /api/chats/total_user_chat_count:
+ *   get:
+ *     summary: Get logged in user chat count
+ *     tags: [Chats]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User chat count
+ */
+router.get('/total_user_chat_count', auth, chatCtrl.getUserChatCount);
 module.exports = router;

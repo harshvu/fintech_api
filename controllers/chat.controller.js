@@ -103,3 +103,24 @@ exports.getChatById = async (req, res) => {
   }
 };
 
+exports.getUserChatCount = async (req, res) => {
+  try {
+
+    const userId = req.user.id;
+
+    const totalChats = await UserChat.countDocuments({
+      userId
+    });
+
+    res.json({
+      userId,
+      total_chats: totalChats
+    });
+
+  } catch (error) {
+    console.error("getUserChatCount Error:", error.message);
+    res.status(500).json({
+      error: "Failed to fetch user chat count"
+    });
+  }
+};
