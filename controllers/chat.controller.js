@@ -42,7 +42,19 @@ exports.saveChat = async (req, res) => {
 };
 
 exports.getChatHistory = async (req, res) => {
-  const userId = req.user.id;
+    const authHeader = req.headers.authorization;
+  
+      if (!authHeader) {
+        return res.status(401).json({ error: 'Authorization token missing' });
+      }
+  
+      let token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const userId = decoded.id || decoded._id;
+  
+      if (!userId) {
+        return res.status(401).json({ error: 'Invalid token: user ID missing' });
+      }
 
   try {
     const chats = await UserChat.aggregate([
@@ -86,7 +98,19 @@ exports.getChatHistory = async (req, res) => {
 
 
 exports.getChatById = async (req, res) => {
-  const userId = req.user.id;
+  const authHeader = req.headers.authorization;
+  
+      if (!authHeader) {
+        return res.status(401).json({ error: 'Authorization token missing' });
+      }
+  
+      let token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const userId = decoded.id || decoded._id;
+  
+      if (!userId) {
+        return res.status(401).json({ error: 'Invalid token: user ID missing' });
+      }
   const chatId = req.params.chatId;
 
   try {
@@ -106,7 +130,19 @@ exports.getChatById = async (req, res) => {
 exports.getUserChatCount = async (req, res) => {
   try {
 
-    const userId = req.user.id;
+    const authHeader = req.headers.authorization;
+  
+      if (!authHeader) {
+        return res.status(401).json({ error: 'Authorization token missing' });
+      }
+  
+      let token = authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const userId = decoded.id || decoded._id;
+  
+      if (!userId) {
+        return res.status(401).json({ error: 'Invalid token: user ID missing' });
+      }
 
     const totalChats = await UserChat.countDocuments({
       userId

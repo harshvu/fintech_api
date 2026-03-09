@@ -90,7 +90,7 @@ router.get("/history", auth, chatCtrl.getChatHistory);
 router.get("/:chatId", auth, chatCtrl.getChatById);
 /**
  * @swagger
- * /api/chats/total_user_chat_count:
+ * /api/search/total_user_chat_count:
  *   get:
  *     summary: Get logged in user chat count
  *     tags: [Chats]
